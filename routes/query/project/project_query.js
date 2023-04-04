@@ -1,4 +1,4 @@
-const { app, connection } = require("../../../../app");
+const { app, connection } = require("../../../app");
 
 
 app.post('/project/create', async (req, res) => {
