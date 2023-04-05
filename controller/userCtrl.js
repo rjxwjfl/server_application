@@ -127,6 +127,6 @@ const userCtrl = {
             res.status(400).send('Both old and new passwords are required');
         }
     }
-}
+};
 
 module.exports = userCtrl;
