@@ -9,16 +9,16 @@ const userCtrl = {
             if (error) throw error;
 
             const userMstQuery = `
-                INSERT INTO user_mst (username, password, name, device_token, fb_uid) 
-                VALUES (${username},${hashedPassword},${name},${device_token},${fb_uid})`;
+                INSERT INTO user_mst (username, password, device_token, fb_uid) 
+                VALUES ('${username}','${hashedPassword}','${device_token}','${fb_uid}')`;
             connection.query(userMstQuery, (error, result) => {
                 if (error) {
                     connection.rollback(() => {
+                        console.log(error);
                         throw error;
                     });
                 }
-                const userId = result.insertId;
-                const userDtlQuery = `INSERT INTO user_dtl (user_id) VALUES (${userId})`;
+                const userDtlQuery = `INSERT INTO user_dtl (user_id, name) VALUES (${result.insertId}, '${name}')`;
                 connection.query(userDtlQuery, (error) => {
                     if (error) {
                         connection.rollback(() => {
@@ -31,7 +31,7 @@ const userCtrl = {
                                 throw error;
                             });
                         }
-                        res.send(result);
+                        res.sendStatus(200);
                     });
                 });
             }

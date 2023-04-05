@@ -10,20 +10,20 @@ const projectCtrl = {
       start_on,
       expire_on,
       rules,
-      members,
     } = req.body;
-    const master_id = req.params.id;
-    
+    const master_id = req.query.id;
+    console.log(master_id);
+
     connection.beginTransaction((error) => {
       if (error) {
         console.error(error);
         return res.sendStatus(500);
       }
-  
+
       const projectMstQuery = `
         INSERT INTO project_mst (title, category, master_id, description, goal, start_on, expire_on) 
-        VALUES ('${title}', '${category}', ${master_id}, '${description}', '${goal}', ${start_on}, ${expire_on})`;
-        
+        VALUES ('${title}', ${category}, ${master_id}, '${description}', '${goal}', '${start_on}', '${expire_on}')`;
+
       connection.query(projectMstQuery, (error, result) => {
         if (error) {
           console.error(error);
@@ -31,9 +31,9 @@ const projectCtrl = {
             return res.sendStatus(500);
           });
         }
-  
+
         const project_id = result.insertId;
-  
+
         if (rules && rules.length > 0) {
           const ruleValues = rules.map((rule) => [project_id, rule]);
           const projectRulesQuery = `INSERT INTO project_rules (project_id, rule) VALUES ${ruleValues}`;
@@ -46,24 +46,17 @@ const projectCtrl = {
             }
           });
         }
-  
-        if (members && members.length > 0) {
-          const memberValues = members.map((member) => [
-            project_id,
-            member.user_id,
-            member.role,
-          ]);
-          const projectMembersQuery = `INSERT INTO project_members (project_id, user_id, role) VALUES ${memberValues}`;
-          connection.query(projectMembersQuery, (error, result) => {
-            if (error) {
-              console.error(error);
-              connection.rollback(() => {
-                return res.sendStatus(500);
-              });
-            }
-          });
-        }
-  
+
+        const projectMembersQuery = `INSERT INTO project_members (project_id, user_id, role) VALUES (${project_id}, ${master_id}, 'master')`;
+        connection.query(projectMembersQuery, (error, result) => {
+          if (error) {
+            console.error(error);
+            connection.rollback(() => {
+              return res.sendStatus(500);
+            });
+          }
+        });
+
         connection.commit((error) => {
           if (error) {
             console.error(error);
@@ -76,9 +69,9 @@ const projectCtrl = {
       });
     });
   },
-  
+
   updatePrj: async (req, res) => {
-    const projectId = req.params.id;
+    const projectId = req.query.id;
     const { title, category, description, goal, start_on, expire_on } =
       req.body;
 
@@ -99,7 +92,7 @@ const projectCtrl = {
   },
 
   deletePrj: async (req, res) => {
-    const projectId = req.params.id;
+    const projectId = req.query.id;
     const query = `
       DELETE project_mst, project_rules, project_members, tasks, tasks_members, tasks_comment, feed, feed_comment
       FROM project_mst
@@ -121,9 +114,9 @@ const projectCtrl = {
       }
     });
   },
-    
+
   empowerMst: async (req, res) => {
-    const projectId = req.params.id;
+    const projectId = req.query.id;
     const { oldMasterId, newMasterId } = req.body;
 
     const query = `
@@ -148,14 +141,15 @@ const projectCtrl = {
   },
 
   updateRules: async (req, res) => {
-    const { project_id, rules } = req.body;
-    
+    const project_id = req.query.id;
+    const { rules } = req.body;
+
     try {
       await connection.beginTransactionAsync();
-  
+
       for (const rule of rules) {
         const { rule_id, new_rule } = rule;
-        
+
         const updateQuery = `
           UPDATE project_rules
           SET rule='${new_rule}'
@@ -163,7 +157,7 @@ const projectCtrl = {
         `;
         await connection.queryAsync(updateQuery);
       }
-      
+
       await connection.commitAsync();
       res.sendStatus(200);
     } catch (error) {
@@ -183,7 +177,13 @@ const projectCtrl = {
 
     let projectsQuery = `
       SELECT 
-        p.*, 
+        p.project_id, 
+        p.title, 
+        p.category, 
+        p.description,
+        p.goal, 
+        p.start_on, 
+        p.expire_on, 
         COUNT(pm.pmember_id) AS member_count, 
         u.name AS master_name, 
         u.introduce AS master_introduce, 
@@ -202,7 +202,7 @@ const projectCtrl = {
       projectsQuery += ` AND (${categoryFilter})`;
     }
 
-    projectsQuery += ` GROUP BY p.project_id`
+    projectsQuery += ` GROUP BY p.project_id, p.title, p.category, p.description, p.goal, p.start_on, p.expire_on, u.name, u.introduce, u.image_url`
 
     if (sort) {
       switch (sort) {
@@ -245,15 +245,15 @@ const projectCtrl = {
     });
   },
 
-  getProject: async (req, res) => {},
+  getProject: async (req, res) => { },
 
-  getMyProject: async (req, res) => {},
+  getMyProject: async (req, res) => { },
 
-  getRules: async (req, res) => {},
+  getRules: async (req, res) => { },
 
-  getMembers: async (req, res) => {},
+  getMembers: async (req, res) => { },
 
-  getMemberScore: async (req, res) => {},
+  getMemberScore: async (req, res) => { },
 };
 
 module.exports = projectCtrl;
