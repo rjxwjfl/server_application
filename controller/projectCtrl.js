@@ -1,18 +1,12 @@
+const e = require("express");
 const connection = require("../configs/dbConfig");
+const fcmCtrl = require("./fcmCtrl");
 
 const projectCtrl = {
   createPrj: async (req, res) => {
-    const {
-      title,
-      category,
-      description,
-      goal,
-      start_on,
-      expire_on,
-      rules,
-    } = req.body;
-    const master_id = req.query.id;
-    console.log(master_id);
+    const { title, category, description, goal, start_on, expire_on, rules } =
+      req.body;
+    const master_id = req.query.uid;
 
     connection.beginTransaction((error) => {
       if (error) {
@@ -71,13 +65,13 @@ const projectCtrl = {
   },
 
   updatePrj: async (req, res) => {
-    const projectId = req.query.id;
+    const projectId = req.query.pid;
     const { title, category, description, goal, start_on, expire_on } =
       req.body;
 
     const query = `
       UPDATE project_mst
-      SET title='${title}', category='${category}', description='${description}', goal='${goal}', start_on='${start_on}', expire_on='${expire_on}'
+      SET title='${title}', category=${category}, description='${description}', goal='${goal}', start_on='${start_on}', expire_on='${expire_on}'
       WHERE project_id=${projectId}
     `;
 
@@ -89,10 +83,10 @@ const projectCtrl = {
         res.sendStatus(200);
       }
     });
-  },
+  }, //fcm
 
   deletePrj: async (req, res) => {
-    const projectId = req.query.id;
+    const projectId = req.query.pid;
     const query = `
       DELETE project_mst, project_rules, project_members, tasks, tasks_members, tasks_comment, feed, feed_comment
       FROM project_mst
@@ -113,10 +107,10 @@ const projectCtrl = {
         res.sendStatus(200);
       }
     });
-  },
+  }, 
 
   empowerMst: async (req, res) => {
-    const projectId = req.query.id;
+    const projectId = req.query.pid;
     const { oldMasterId, newMasterId } = req.body;
 
     const query = `
@@ -138,38 +132,42 @@ const projectCtrl = {
         res.sendStatus(200);
       }
     });
-  },
+  }, //fcm
 
-  updateRules: async (req, res) => {
-    const project_id = req.query.id;
-    const { rules } = req.body;
+  createRule: async (req, res) => {
+    const project_id = req.query.pid;
+    const rule = req.body.rule;
 
-    try {
-      await connection.beginTransactionAsync();
-
-      for (const rule of rules) {
-        const { rule_id, new_rule } = rule;
-
-        const updateQuery = `
-          UPDATE project_rules
-          SET rule='${new_rule}'
-          WHERE rule_id=${rule_id} AND project_id=${project_id}
-        `;
-        await connection.queryAsync(updateQuery);
+    const query = `
+        INSERT INTO project_rules (project_id, rule)
+        VALUES (${project_id}, '${rule}')
+      `;
+    connection.query(query, (error, result) => {
+      if (error){
+        console.log(error);
+        res.sendStatus(500);
       }
-
-      await connection.commitAsync();
       res.sendStatus(200);
-    } catch (error) {
-      await connection.rollbackAsync();
-      console.error(error);
-      res.sendStatus(500);
-    }
+    });
   },
-  // get
+
+  deleteRule: async (req, res) => {
+    const rule_id = req.query.rid;
+
+    const query = `DELETE FROM project_rules WHERE rule_id = ${rule_id}`;
+
+    connection.query(query, (error, result) => {
+      if (error){
+        console.log(error);
+        res.sendStatus(500);
+      }
+      res.sendStatus(200);
+    });
+  },
+
   searchPrj: async (req, res) => {
     const page = req.query.page || 1;
-    const limit = 20;
+    const limit = 10;
     const offset = (page - 1) * limit;
     const searchKeyword = req.query.searchKeyword || "";
     const categories = req.query.category || [];
@@ -198,11 +196,13 @@ const projectCtrl = {
     }
 
     if (categories.length > 0) {
-      const categoryFilter = categories.map((category) => `p.category = ${category}`).join(' OR ');
+      const categoryFilter = categories
+        .map((category) => `p.category = ${category}`)
+        .join(" OR ");
       projectsQuery += ` AND (${categoryFilter})`;
     }
 
-    projectsQuery += ` GROUP BY p.project_id, p.title, p.category, p.description, p.goal, p.start_on, p.expire_on, u.name, u.introduce, u.image_url`
+    projectsQuery += ` GROUP BY p.project_id, p.title, p.category, p.description, p.goal, p.start_on, p.expire_on, u.name, u.introduce, u.image_url`;
 
     if (sort) {
       switch (sort) {
@@ -245,15 +245,95 @@ const projectCtrl = {
     });
   },
 
-  getProject: async (req, res) => { },
+  getProject: async (req, res) => {
+    const project_id = req.query.pid;
 
-  getMyProject: async (req, res) => { },
+    const query = `
+      SELECT *
+      FROM project_mst pm
+      WHERE pm.project_id = ${project_id}
+    `;
 
-  getRules: async (req, res) => { },
+    connection.query(query, (error, rows) => {
+      if (error) {
+        console.log(error);
+        res.sendStatus(500);
+      }
+      res.send(rows);
+    });
+  },
 
-  getMembers: async (req, res) => { },
+  getRules: async (req, res) => {
+    const project_id = req.query.pid;
 
-  getMemberScore: async (req, res) => { },
+    const query = `
+      SELECT *
+      FROM project_rules
+      WHERE project_id = ${project_id}
+    `;
+
+    connection.query(query, (error, rows) => {
+      if (error){
+        console.log(error);
+        res.sendStatus(500);
+      }
+      res.send(rows);
+    });
+  },
+
+  joinProject: async (req, res) => {
+    const project_id = req.query.pid;
+    const user_id = req.query.uid;
+
+    const query = `
+      INSERT INTO project_members (project_id, user_id, role)
+      VALUES (${project_id}, ${user_id}, 'guest')
+    `;
+    // in flutter : accept(->member) or denied(->row delete)
+    connection.query(query, (error, result) => {
+      if (error){
+        res.sendStatus(500);
+      }
+      res.sendStatus(200);
+    });
+  },
+
+  adjustRole: async (req, res) => {
+    const project_id = req.query.pid;
+    const { user_id, role } = req.body;
+
+    const query = `UPDATE project_members SET role=${role} WHERE user_id=${user_id} AND project_id=${project_id}`;
+    connection.query(query, (error, result) => {
+      if (error){
+        res.sendStatus(500);
+      }
+      res.sendStatus(200);
+    });
+
+  }, //fcm
+  
+  getMembers: async (req, res) => {
+    const project_id = req.query.pid;
+    const query = `
+      SELECT pm.role, ud.name, ud.introduce, ud.image_url, tm.progress, tm.evaluation
+      FROM project_members pm
+      LEFT JOIN user_dtl ud ON pm.user_id = ud.user_id
+      LEFT JOIN tasks_members tm ON pm.user_id = tm.user_id
+      WHERE pm.project_id=${project_id}
+    `;
+    connection.query(query, (error, rows) => {
+      if (error){
+        res.sendStatus(500);
+      }
+      res.send(rows);
+    });
+  },
+
+  inviteMember: async (req, res) => {
+    const { project_id, user_id } = req.body;
+    fcmCtrl.invitePush();
+
+  }
 };
 
 module.exports = projectCtrl;
