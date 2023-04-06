@@ -1,4 +1,3 @@
-const e = require("express");
 const connection = require("../configs/dbConfig");
 const fcmCtrl = require("./fcmCtrl");
 
@@ -195,13 +194,15 @@ const projectCtrl = {
       projectsQuery += ` WHERE p.title LIKE '%${searchKeyword}%'`;
     }
 
-    if (categories.length > 0) {
-      const categoryFilter = categories
-        .map((category) => `p.category = ${category}`)
-        .join(" OR ");
-      projectsQuery += ` AND (${categoryFilter})`;
+    if (categories && Array.isArray(categories)) {
+      if (categories.length > 0) {
+        const categoryFilter = categories
+          .map((category) => `p.category = ${category}`)
+          .join(" OR ");
+        projectsQuery += ` AND (${categoryFilter})`;
+      }
     }
-
+    
     projectsQuery += ` GROUP BY p.project_id, p.title, p.category, p.description, p.goal, p.start_on, p.expire_on, u.name, u.introduce, u.image_url`;
 
     if (sort) {
@@ -241,6 +242,7 @@ const projectCtrl = {
         console.log(error);
         res.sendStatus(500);
       }
+      console.log(rows);
       res.send(rows);
     });
   },

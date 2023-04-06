@@ -17,6 +17,9 @@ router.route("/member")
     .post(projectCtrl.joinProject)
     .put(projectCtrl.adjustRole);
 
+router.route("/dtl")
+    .get(projectCtrl.getProject);
+
 
 
 module.exports = router;

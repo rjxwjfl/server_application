@@ -143,12 +143,6 @@ const userCtrl = {
 
   getMyProject: async (req, res) => {
     const user_id = req.query.uid;
-    const page = req.query.page || 1;
-    const limit = 10;
-    const offset = (page - 1) * limit;
-    const searchKeyword = req.query.searchKeyword || "";
-    const categories = req.query.category || [];
-    const sort = req.query.sort || "";
 
     let projectsQuery = `
           SELECT 
@@ -167,52 +161,8 @@ const userCtrl = {
           LEFT JOIN project_members pm ON p.project_id = pm.project_id 
           LEFT JOIN user_dtl u ON p.master_id = u.user_id
           WHERE p.master_id = ${user_id}
+          GROUP BY p.project_id, p.title, p.category, p.description, p.goal, p.start_on, p.expire_on, u.name, u.introduce, u.image_url
         `;
-
-    if (searchKeyword) {
-      projectsQuery += ` AND LIKE '%${searchKeyword}%'`;
-    }
-
-    if (categories.length > 0) {
-      const categoryFilter = categories
-        .map((category) => `p.category = ${category}`)
-        .join(" OR ");
-      projectsQuery += ` AND (${categoryFilter})`;
-    }
-
-    projectsQuery += ` GROUP BY p.project_id, p.title, p.category, p.description, p.goal, p.start_on, p.expire_on, u.name, u.introduce, u.image_url`;
-
-    if (sort) {
-      switch (sort) {
-        case "start_on_desc":
-          projectsQuery += ` ORDER BY p.start_on DESC`;
-          break;
-        case "start_on_asc":
-          projectsQuery += ` ORDER BY p.start_on ASC`;
-          break;
-        case "expire_on_desc":
-          projectsQuery += ` ORDER BY p.expire_on DESC`;
-          break;
-        case "expire_on_asc":
-          projectsQuery += ` ORDER BY p.expire_on ASC`;
-          break;
-        case "member_count_desc":
-          projectsQuery += ` ORDER BY member_count DESC`;
-          break;
-        case "member_count_asc":
-          projectsQuery += ` ORDER BY member_count ASC`;
-          break;
-        case "title_asc":
-          projectsQuery += ` ORDER BY p.title ASC`;
-          break;
-        case "title_desc":
-        default:
-          projectsQuery += ` ORDER BY p.title DESC`;
-          break;
-      }
-    }
-
-    projectsQuery += ` LIMIT ${limit} OFFSET ${offset}`;
 
     connection.query(projectsQuery, (error, rows) => {
       if (error) {
