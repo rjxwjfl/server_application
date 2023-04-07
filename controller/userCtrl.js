@@ -18,7 +18,8 @@ const userCtrl = {
             throw error;
           });
         }
-        const userDtlQuery = `INSERT INTO user_dtl (user_id, name) VALUES (${result.insertId}, '${name}')`;
+        const userId = result.insertId;
+        const userDtlQuery = `INSERT INTO user_dtl (user_id, name) VALUES (${userId}, '${name}')`;
         connection.query(userDtlQuery, (error) => {
           if (error) {
             connection.rollback(() => {
@@ -31,7 +32,7 @@ const userCtrl = {
                 throw error;
               });
             }
-            res.sendStatus(200);
+            res.status(200).send({ user_id: userId });
           });
         });
       });
@@ -66,7 +67,7 @@ const userCtrl = {
                 throw error;
               });
             }
-            res.send(result);
+            res.status(200).send({ user_id: userId });
           });
         });
       });
@@ -74,7 +75,9 @@ const userCtrl = {
   }, // add duplication check for account
 
   // /user/
-  getUserData: async (req, res) => {},
+  getUserData: async (req, res) => {
+    const userId = req.query.uid;
+  },
   modUserDtl: async (req, res) => {
     const user_id = req.query.uid;
     const { name, introduce, image_url } = req.body;

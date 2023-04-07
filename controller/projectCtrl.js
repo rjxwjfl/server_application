@@ -57,7 +57,7 @@ const projectCtrl = {
               return res.sendStatus(500);
             });
           }
-          res.sendStatus(200);
+          res.status(200).send({ "project_id" : project_id });
         });
       });
     });
@@ -317,7 +317,7 @@ const projectCtrl = {
   getMembers: async (req, res) => {
     const project_id = req.query.pid;
     const query = `
-      SELECT pm.role, ud.name, ud.introduce, ud.image_url, tm.progress, tm.evaluation
+      SELECT pm.role, ud.name, ud.introduce, ud.image_url, ud.latest_access, tm.progress, tm.evaluation
       FROM project_members pm
       LEFT JOIN user_dtl ud ON pm.user_id = ud.user_id
       LEFT JOIN tasks_members tm ON pm.user_id = tm.user_id

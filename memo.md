@@ -25,6 +25,14 @@ CREATE TABLE user_project (
   project_id INT NOT NULL
 );
 
+//
+CREATE TABLE user_tasks (
+  user_task_id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL,
+  task_id INT NOT NULL
+);
+//
+
 CREATE TABLE payment_info (
   payment_id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
@@ -38,8 +46,10 @@ CREATE TABLE project_mst (
   master_id INT NOT NULL,
   description VARCHAR(255) NOT NULL,
   goal VARCHAR(255) NOT NULL,
-  start_on TIMESTAMP NOT NULL,
-  expire_on TIMESTAMP NOT NULL
+  // create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  start_on TIMESTAMP,
+  expire_on TIMESTAMP,
+  // is_private BOOLEAN NOT NULL DEFAULT 0
 );
 
 CREATE TABLE project_rules (
@@ -59,15 +69,21 @@ CREATE TABLE tasks (
   task_id INT AUTO_INCREMENT PRIMARY KEY,
   project_id INT NOT NULL,
   author_id INT NOT NULL,
+  // manager_id INT,
   title VARCHAR(25) NOT NULL,
   description VARCHAR(255),
   create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   start_on TIMESTAMP NOT NULL,
-  deadline TIMESTAMP NOT NULL
+  expire_on TIMESTAMP NOT NULL // replace deadline
 );
 
-CREATE TABLE tasks_members (
+CREATE TABLE task_dtl (
+  task_dtl_id INT AUTO_INCREMENT PRIMARY KEY,
+  
+);
+
+CREATE TABLE task_members ( // prev. tasks_members
   tmembers_id INT AUTO_INCREMENT PRIMARY KEY,
   task_id INT NOT NULL,
   user_id INT NOT NULL,
@@ -75,13 +91,13 @@ CREATE TABLE tasks_members (
   evaluation INT NOT NULL DEFAULT 0
 );
 
-CREATE TABLE tasks_comment (
+<!-- CREATE TABLE tasks_comment (
   tcomments_id INT AUTO_INCREMENT PRIMARY KEY,
   task_id INT NOT NULL,
   content VARCHAR(255) NOT NULL,
   create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+); -->
 
 CREATE TABLE feed (
   feed_id INT AUTO_INCREMENT PRIMARY KEY,

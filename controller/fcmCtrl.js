@@ -20,7 +20,7 @@ const fcmCtrl = {
         res.status(500).json({ message: "Error sending message" });
       });
   },
-  invitePush: async (title, content, targets, pid) => {
+  backGroundPush: async (title, content, targets, pid) => {
     const payload = {
       notification: {
         title: title,

@@ -2,9 +2,8 @@ const connection = require("../configs/dbConfig");
 
 const taskCtrl = {
   createTask: async (req, res) => {
-    const { title, description, start_on, deadline } = req.body;
+    const { title, description, author_id, start_on, deadline } = req.body;
     const project_id = req.query.pid;
-    const author_id = req.query.uid;
 
     connection.beginTransaction((error) => {
       if (error) {
