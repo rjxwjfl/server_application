@@ -1,7 +1,7 @@
 CREATE TABLE user_mst (
   user_id INT AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(50) NOT NULL,
-  password TEXT,
+  user_pw TEXT,
   device_token VARCHAR(255) NOT NULL,
   fb_uid CHAR(32) NOT NULL
 );
@@ -16,58 +16,58 @@ CREATE TABLE user_dtl (
   contact VARCHAR(50),
   introduce VARCHAR(255) DEFAULT NULL,
   image_url VARCHAR(255) DEFAULT NULL,
-  payment_state BOOLEAN NOT NULL DEFAULT FALSE,
-  subscription_deadline TIMESTAMP
+  sub_state BOOLEAN NOT NULL DEFAULT FALSE,
+  sub_deadline TIMESTAMP
 );
 
-CREATE TABLE user_project (
-  user_project_id INT AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE user_prj (
+  user_prj_id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
-  project_id INT NOT NULL
+  prj_id INT NOT NULL
 );
 
-CREATE TABLE user_tasks (
+CREATE TABLE user_task (
   user_task_id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
   task_id INT NOT NULL
 );
 
 CREATE TABLE payment_info (
-  payment_id INT AUTO_INCREMENT PRIMARY KEY,
+  pmt_id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
   date TIMESTAMP NOT NULL
 );
 
 CREATE TABLE project_mst (
-  project_id INT AUTO_INCREMENT PRIMARY KEY,
+  prj_id INT AUTO_INCREMENT PRIMARY KEY,
   title VARCHAR(25) NOT NULL,
   category INT NOT NULL,
-  master_id INT NOT NULL,
-  description VARCHAR(255) NOT NULL,
+  mst_id INT NOT NULL,
+  prj_desc VARCHAR(255) NOT NULL,
   goal VARCHAR(255) NOT NULL,
   create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   start_on TIMESTAMP,
   expire_on TIMESTAMP,
-  is_private BOOLEAN NOT NULL DEFAULT 0,
-  project_password TEXT
+  pvt BOOLEAN NOT NULL DEFAULT 0,
+  prj_pw TEXT
 );
 
 CREATE TABLE project_rules (
   rule_id INT AUTO_INCREMENT PRIMARY KEY,
-  project_id INT NOT NULL,
+  prj_id INT NOT NULL,
   rule VARCHAR(50)
 );
 
-CREATE TABLE project_member (
-  project_member_id INT AUTO_INCREMENT PRIMARY KEY,
-  project_id INT NOT NULL,
+CREATE TABLE project_mbr (
+  prj_mbr_id INT AUTO_INCREMENT PRIMARY KEY,
+  prj_id INT NOT NULL,
   user_id INT NOT NULL,
   role INT NOT NULL DEFAULT 3
 );
 
-CREATE TABLE project_milestone (
-  project_ms_id INT AUTO_INCREMENT PRIMARY KEY,
-  project_id INT NOT NULL,
+CREATE TABLE project_ms (
+  prj_ms_id INT AUTO_INCREMENT PRIMARY KEY,
+  prj_id INT NOT NULL,
   task_id INT,
   ms_title VARCHAR(50),
   ms_content VARCHAR(255),
@@ -77,72 +77,73 @@ CREATE TABLE project_milestone (
 
 CREATE TABLE task (
   task_id INT AUTO_INCREMENT PRIMARY KEY,
-  project_id INT NOT NULL,
+  prj_id INT NOT NULL,
   author_id INT NOT NULL,
   manager_id INT,
-  title VARCHAR(25) NOT NULL,
-  description VARCHAR(255),
+  title VARCHAR(50) NOT NULL,
+  task_desc VARCHAR(255),
   create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   complete_at TIMESTAMP,
   start_on TIMESTAMP NOT NULL,
   expire_on TIMESTAMP NOT NULL,
   task_state BOOLEAN NOT NULL DEFAULT 0,
-  attached TEXT
+  task_att TEXT
 );
 
 CREATE TABLE task_dtl (
   task_dtl_id INT AUTO_INCREMENT PRIMARY KEY,
   task_id INT NOT NULL,
   pic_id INT NOT NULL,
-  description VARCHAR(255),
-  progress INT NOT NULL DEFAULT 0,
-  evaluation INT NOT NULL DEFAULT 0,
-  attached TEXT
+  task_dtl_cnt VARCHAR(255),
+  user_prog INT NOT NULL DEFAULT 0,
+  user_eval INT NOT NULL DEFAULT 0,
+  task_dtl_att TEXT
+  -- prog = progress // eval = evaluation
 );
 
-CREATE TABLE task_comment (
-  task_comment_id INT AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE task_cmt (
+  task_cmt_id INT AUTO_INCREMENT PRIMARY KEY,
   task_id INT NOT NULL,
   author_id INT NOT NULL,
-  content VARCHAR(255) NOT NULL,
+  task_cmt_cnt VARCHAR(255) NOT NULL,
   create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-CREATE TABLE task_comment_reply(
+CREATE TABLE task_cmt_reply(
   task_reply_id	INT AUTO_INCREMENT PRIMARY KEY,
-  task_comment_id INT NOT NULL,
+  task_cmt_id INT NOT NULL,
   author_id INT NOT NULL,
-  content VARCHAR(255) NOT NULL,
+  task_reply_cnt VARCHAR(255) NOT NULL,
   create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
 CREATE TABLE feed (
   feed_id INT AUTO_INCREMENT PRIMARY KEY,
-  project_id INT NOT NULL,
-  title VARCHAR(25) NOT NULL,
+  prj_id INT NOT NULL,
+  title VARCHAR(50) NOT NULL,
   author_id INT NOT NULL,
-  content VARCHAR(255) NOT NULL,
+  feed_cnt VARCHAR(255) NOT NULL,
   create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-CREATE TABLE feed_comment (
-  feed_comment_id INT AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE feed_cmt (
+  feed_cmt_id INT AUTO_INCREMENT PRIMARY KEY,
   feed_id INT NOT NULL,
   author_id INT NOT NULL,
-  content VARCHAR(255) NOT NULL,
+  feed_cmt_cnt VARCHAR(255) NOT NULL,
   create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-CREATE TABLE feed_comment_reply(
+CREATE TABLE feed_cmt_reply(
   feed_reply_id	INT AUTO_INCREMENT PRIMARY KEY,
-  feed_comment_id INT NOT NULL,
+  feed_cmt_id INT NOT NULL,
   author_id INT NOT NULL,
-  content VARCHAR(255) NOT NULL,
+  feed_reply_cnt VARCHAR(255) NOT NULL,
   create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
