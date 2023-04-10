@@ -3,9 +3,10 @@ const fcmCtrl = require("./fcmCtrl");
 
 const projectCtrl = {
   createPrj: async (req, res) => {
-    const { title, category, description, goal, start_on, expire_on, rules } =
+    const { title, category, description, goal, start_on, expire_on, rules, project_password } =
       req.body;
-    const master_id = req.query.uid;
+    const masterId = req.query.uid;
+    const isPrivate = req.query.private;
 
     connection.beginTransaction((error) => {
       if (error) {
@@ -13,11 +14,19 @@ const projectCtrl = {
         return res.sendStatus(500);
       }
 
-      const projectMstQuery = `
-        INSERT INTO project_mst (title, category, master_id, description, goal, start_on, expire_on) 
-        VALUES ('${title}', ${category}, ${master_id}, '${description}', '${goal}', '${start_on}', '${expire_on}')`;
+      let mstQuery;
 
-      connection.query(projectMstQuery, (error, result) => {
+      if (isPrivate == 1){
+        mstQuery = `
+          INSERT INTO project_mst (title, category, master_id, description, goal, start_on, expire_on, is_private, project_password) 
+          VALUES ('${title}', ${category}, ${masterId}, '${description}', '${goal}', '${start_on}', '${expire_on}', ${isPrivate}, '${project_password}')`;
+      } else {
+        mstQuery = `
+          INSERT INTO project_mst (title, category, master_id, description, goal, start_on, expire_on) 
+          VALUES ('${title}', ${category}, ${masterId}, '${description}', '${goal}', '${start_on}', '${expire_on}')`;
+      }
+
+      connection.query(mstQuery, (error, result) => {
         if (error) {
           console.error(error);
           connection.rollback(() => {
@@ -29,8 +38,8 @@ const projectCtrl = {
 
         if (rules && rules.length > 0) {
           const ruleValues = rules.map((rule) => [project_id, rule]);
-          const projectRulesQuery = `INSERT INTO project_rules (project_id, rule) VALUES ${ruleValues}`;
-          connection.query(projectRulesQuery, (error, result) => {
+          const ruleQuery = `INSERT INTO project_rules (project_id, rule) VALUES ${ruleValues}`;
+          connection.query(ruleQuery, (error, result) => {
             if (error) {
               console.error(error);
               connection.rollback(() => {
@@ -40,8 +49,8 @@ const projectCtrl = {
           });
         }
 
-        const projectMembersQuery = `INSERT INTO project_members (project_id, user_id, role) VALUES (${project_id}, ${master_id}, 'master')`;
-        connection.query(projectMembersQuery, (error, result) => {
+        const memberQuery = `INSERT INTO project_members (project_id, user_id, role) VALUES (${project_id}, ${masterId}, 'master')`;
+        connection.query(memberQuery, (error, result) => {
           if (error) {
             console.error(error);
             connection.rollback(() => {
@@ -83,6 +92,10 @@ const projectCtrl = {
       }
     });
   }, //fcm
+
+  setMileStone: async (req, res) => {
+    const {}
+  },
 
   deletePrj: async (req, res) => {
     const projectId = req.query.pid;
@@ -172,7 +185,7 @@ const projectCtrl = {
     const categories = req.query.category || [];
     const sort = req.query.sort || "";
 
-    let projectsQuery = `
+    let query = `
       SELECT 
         p.project_id, 
         p.title, 
@@ -191,53 +204,58 @@ const projectCtrl = {
     `;
 
     if (searchKeyword) {
-      projectsQuery += ` WHERE p.title LIKE '%${searchKeyword}%'`;
+      query += ` WHERE p.title LIKE '%${searchKeyword}%'`;
     }
 
     if (categories && Array.isArray(categories)) {
+      if (searchKeyword){
+        query += ` AND `
+      } else {
+        query += ` WHERE`
+      }
       if (categories.length > 0) {
         const categoryFilter = categories
           .map((category) => `p.category = ${category}`)
           .join(" OR ");
-        projectsQuery += ` AND (${categoryFilter})`;
+        query += ` (${categoryFilter})`;
       }
     }
     
-    projectsQuery += ` GROUP BY p.project_id, p.title, p.category, p.description, p.goal, p.start_on, p.expire_on, u.name, u.introduce, u.image_url`;
+    query += ` GROUP BY p.project_id, p.title, p.category, p.description, p.goal, p.start_on, p.expire_on, u.name, u.introduce, u.image_url`;
 
     if (sort) {
       switch (sort) {
         case "start_on_desc":
-          projectsQuery += ` ORDER BY p.start_on DESC`;
+          query += ` ORDER BY p.start_on DESC`;
           break;
         case "start_on_asc":
-          projectsQuery += ` ORDER BY p.start_on ASC`;
+          query += ` ORDER BY p.start_on ASC`;
           break;
         case "expire_on_desc":
-          projectsQuery += ` ORDER BY p.expire_on DESC`;
+          query += ` ORDER BY p.expire_on DESC`;
           break;
         case "expire_on_asc":
-          projectsQuery += ` ORDER BY p.expire_on ASC`;
+          query += ` ORDER BY p.expire_on ASC`;
           break;
         case "member_count_desc":
-          projectsQuery += ` ORDER BY member_count DESC`;
+          query += ` ORDER BY member_count DESC`;
           break;
         case "member_count_asc":
-          projectsQuery += ` ORDER BY member_count ASC`;
+          query += ` ORDER BY member_count ASC`;
           break;
         case "title_asc":
-          projectsQuery += ` ORDER BY p.title ASC`;
+          query += ` ORDER BY p.title ASC`;
           break;
         case "title_desc":
         default:
-          projectsQuery += ` ORDER BY p.title DESC`;
+          query += ` ORDER BY p.title DESC`;
           break;
       }
     }
 
-    projectsQuery += ` LIMIT ${limit} OFFSET ${offset}`;
+    query += ` LIMIT ${limit} OFFSET ${offset}`;
 
-    connection.query(projectsQuery, (error, rows) => {
+    connection.query(query, (error, rows) => {
       if (error) {
         console.log(error);
         res.sendStatus(500);
@@ -289,7 +307,7 @@ const projectCtrl = {
 
     const query = `
       INSERT INTO project_members (project_id, user_id, role)
-      VALUES (${project_id}, ${user_id}, 'guest')
+      VALUES (${project_id}, ${user_id}, 3)
     `;
     // in flutter : accept(->member) or denied(->row delete)
     connection.query(query, (error, result) => {

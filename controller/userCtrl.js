@@ -3,7 +3,8 @@ const bcrypt = require("bcrypt");
 
 const userCtrl = {
   registUserData: async (req, res) => {
-    const { username, password, name, device_token, fb_uid } = req.body;
+    const { username, password, name, contact, device_token, fb_uid } =
+      req.body;
     const hashedPassword = await bcrypt.hash(password, 10);
     connection.beginTransaction((error) => {
       if (error) throw error;
@@ -19,7 +20,7 @@ const userCtrl = {
           });
         }
         const userId = result.insertId;
-        const userDtlQuery = `INSERT INTO user_dtl (user_id, name) VALUES (${userId}, '${name}')`;
+        const userDtlQuery = `INSERT INTO user_dtl (user_id, name, contact) VALUES (${userId}, '${name}', '${contact}')`;
         connection.query(userDtlQuery, (error) => {
           if (error) {
             connection.rollback(() => {
@@ -40,12 +41,12 @@ const userCtrl = {
   }, // add duplication check for account
 
   registGoogleUser: async (req, res) => {
-    const { username, name, device_token, fb_uid } = req.body;
+    const { username, name, device_token, fb_uid, contact } = req.body;
     connection.beginTransaction((error) => {
       if (error) throw error;
 
       const userMstQuery = `
-                INSERT INTO user_mst (username, name, device_token, fb_uid) 
+                INSERT INTO user_mst (username, device_token, fb_uid) 
                 VALUES (${username}, ${name}, ${device_token}, ${fb_uid})`;
       connection.query(userMstQuery, (error, result) => {
         if (error) {
@@ -54,7 +55,7 @@ const userCtrl = {
           });
         }
         const userId = result.insertId;
-        const userDtlQuery = `INSERT INTO user_dtl (user_id) VALUES (${userId})`;
+        const userDtlQuery = `INSERT INTO user_dtl (user_id, name, contact) VALUES (${userId}, '${name}', '${contact}')`;
         connection.query(userDtlQuery, (error) => {
           if (error) {
             connection.rollback(() => {
@@ -74,10 +75,73 @@ const userCtrl = {
     });
   }, // add duplication check for account
 
-  // /user/
+  // -- query for entire user data (user own)
+  getOwnData: async (req, res) => {
+    const userId = req.query.uid;
+    const query = `
+      SELECT 
+        um.username,
+        um.fb_uid,
+        ud.create_at,
+        ud.update_at,
+        ud.latest_access,
+        ud.name,
+        ud.contact,
+        ud.introduce,
+        ud.image_url,
+        ud.state,
+        ud.subscription_deadline,
+        COUNT(DISTINCT up.project_id) AS project_count,
+        COUNT(DISTINCT ut.task_id) AS task_count
+      FROM user_mst um
+      LEFT JOIN user_dtl ud ON um.user_id = ud.user_id
+      LEFT JOIN user_project up ON um.user_id = up.user_id
+      LEFT JOIN user_tasks ut ON um.user_id = ut.user_id
+      WHERE um.user_id = ${userId}
+      GROUP BY um.username, um.fb_uid, ud.create_at, ud.update_at, ud.latest_access, ud.name, ud.contact, ud.introduce, ud.image_url, ud.state, ud.subscription_deadline;
+    `;
+
+    connection.query(query, (error, result) => {
+      if (error) {
+        console.log(error);
+        res.sendStatus(500);
+      }
+      res.status(200).send(result);
+    });
+  },
+
+  // -- query for user data (another user)
   getUserData: async (req, res) => {
     const userId = req.query.uid;
+    const query = `
+      SELECT 
+        um.username,
+        um.fb_uid,
+        ud.create_at,
+        ud.update_at,
+        ud.latest_access,
+        ud.name,
+        ud.contact,
+        ud.introduce,
+        ud.image_url,
+        ud.state,
+        ud.subscription_deadline,
+        COUNT(DISTINCT up.project_id) AS project_count,
+        COUNT(DISTINCT ut.task_id) AS task_count
+      FROM user_mst um
+      LEFT JOIN user_dtl ud ON um.user_id = ud.user_id
+      WHERE um.user_id = ${userId};
+    `;
+
+    connection.query(query, (error, result) => {
+      if (error){
+        console.log(error);
+        res.sendStatus(500);
+      }
+      res.status(200).send(result);
+    });
   },
+
   modUserDtl: async (req, res) => {
     const user_id = req.query.uid;
     const { name, introduce, image_url } = req.body;
@@ -145,9 +209,9 @@ const userCtrl = {
   },
 
   getMyProject: async (req, res) => {
-    const user_id = req.query.uid;
+    const userId = req.query.uid;
 
-    let projectsQuery = `
+    const query = `
           SELECT 
             p.project_id, 
             p.title, 
@@ -156,18 +220,18 @@ const userCtrl = {
             p.goal, 
             p.start_on, 
             p.expire_on, 
-            COUNT(pm.pmember_id) AS member_count, 
+            COUNT(pm.project_member_id) AS member_count, 
             u.name AS master_name, 
             u.introduce AS master_introduce, 
             u.image_url AS master_image_url 
           FROM project_mst p 
-          LEFT JOIN project_members pm ON p.project_id = pm.project_id 
+          LEFT JOIN project_member pm ON p.project_id = pm.project_id 
           LEFT JOIN user_dtl u ON p.master_id = u.user_id
-          WHERE p.master_id = ${user_id}
-          GROUP BY p.project_id, p.title, p.category, p.description, p.goal, p.start_on, p.expire_on, u.name, u.introduce, u.image_url
+          WHERE p.master_id = ${userId}
+          GROUP BY p.project_id, p.title, p.category, p.description, p.goal, p.start_on, p.expire_on, u.name, u.introduce, u.image_url;
         `;
 
-    connection.query(projectsQuery, (error, rows) => {
+    connection.query(query, (error, rows) => {
       if (error) {
         console.log(error);
         res.sendStatus(500);
