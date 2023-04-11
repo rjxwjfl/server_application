@@ -100,6 +100,7 @@ CREATE TABLE task_dtl (
   user_eval INT NOT NULL DEFAULT 0,
   task_dtl_att TEXT
   -- prog = progress // eval = evaluation
+  -- user_eval would be null
 );
 
 CREATE TABLE task_cmt (

@@ -3,10 +3,18 @@ const fcmCtrl = require("./fcmCtrl");
 
 const projectCtrl = {
   createPrj: async (req, res) => {
-    const { title, category, description, goal, start_on, expire_on, rules, project_password } =
-      req.body;
-    const masterId = req.query.uid;
-    const isPrivate = req.query.private;
+    const {
+      title,
+      category,
+      prj_desc,
+      goal,
+      start_on,
+      expire_on,
+      rules,
+      prj_pw,
+    } = req.body;
+    const mstId = req.query.uid;
+    const pvt = req.query.private;
 
     connection.beginTransaction((error) => {
       if (error) {
@@ -16,14 +24,14 @@ const projectCtrl = {
 
       let mstQuery;
 
-      if (isPrivate == 1){
+      if (pvt == 1) {
         mstQuery = `
-          INSERT INTO project_mst (title, category, master_id, description, goal, start_on, expire_on, is_private, project_password) 
-          VALUES ('${title}', ${category}, ${masterId}, '${description}', '${goal}', '${start_on}', '${expire_on}', ${isPrivate}, '${project_password}')`;
+          INSERT INTO project_mst (title, category, mst_id, prj_desc, goal, start_on, expire_on, pvt, prj_pw) 
+          VALUES ('${title}', ${category}, ${mstId}, '${prj_desc}', '${goal}', '${start_on}', '${expire_on}', ${pvt}, '${prj_pw}')`;
       } else {
         mstQuery = `
-          INSERT INTO project_mst (title, category, master_id, description, goal, start_on, expire_on) 
-          VALUES ('${title}', ${category}, ${masterId}, '${description}', '${goal}', '${start_on}', '${expire_on}')`;
+          INSERT INTO project_mst (title, category, mst_id, prj_desc, goal, start_on, expire_on) 
+          VALUES ('${title}', ${category}, ${mstId}, '${prj_desc}', '${goal}', '${start_on}', '${expire_on}')`;
       }
 
       connection.query(mstQuery, (error, result) => {
@@ -34,11 +42,11 @@ const projectCtrl = {
           });
         }
 
-        const project_id = result.insertId;
+        const prjId = result.insertId;
 
         if (rules && rules.length > 0) {
-          const ruleValues = rules.map((rule) => [project_id, rule]);
-          const ruleQuery = `INSERT INTO project_rules (project_id, rule) VALUES ${ruleValues}`;
+          const ruleValues = rules.map((rule) => [prjId, rule]);
+          const ruleQuery = `INSERT INTO project_rules (prj_id, rule) VALUES ${ruleValues}`;
           connection.query(ruleQuery, (error, result) => {
             if (error) {
               console.error(error);
@@ -49,7 +57,7 @@ const projectCtrl = {
           });
         }
 
-        const memberQuery = `INSERT INTO project_members (project_id, user_id, role) VALUES (${project_id}, ${masterId}, 'master')`;
+        const memberQuery = `INSERT INTO project_members (prj_id, user_id, role) VALUES (${prjId}, ${mstId}, 'master')`;
         connection.query(memberQuery, (error, result) => {
           if (error) {
             console.error(error);
@@ -66,14 +74,14 @@ const projectCtrl = {
               return res.sendStatus(500);
             });
           }
-          res.status(200).send({ "project_id" : project_id });
+          res.status(200).send({ prj_id: prjId });
         });
       });
     });
   },
 
   updatePrj: async (req, res) => {
-    const projectId = req.query.pid;
+    const prjId = req.query.pid;
     const { title, category, description, goal, start_on, expire_on } =
       req.body;
 
@@ -94,46 +102,29 @@ const projectCtrl = {
   }, //fcm
 
   setMileStone: async (req, res) => {
-    const {}
+    const { ms_title, ms_content, ms_state } = req.body;
+    const prjId = req.query.pid;
+    const taskId = req.query.tid;
+
+    const query = `
+      INSERT INTO project_ms (prj_id, task_id, ms_title, ms_content, ms_state)
+      VALUES (${prjId}, ${taskId}, '${ms_title}', '${ms_content}', ${ms_state})
+    `;
   },
 
-  deletePrj: async (req, res) => {
-    const projectId = req.query.pid;
-    const query = `
-      DELETE project_mst, project_rules, project_members, tasks, tasks_members, tasks_comment, feed, feed_comment
-      FROM project_mst
-      LEFT OUTER JOIN project_rules ON project_mst.project_id = project_rules.project_id
-      LEFT OUTER JOIN project_members ON project_mst.project_id = project_members.project_id
-      LEFT OUTER JOIN tasks ON project_mst.project_id = tasks.project_id
-      LEFT OUTER JOIN tasks_members ON tasks.task_id = tasks_members.task_id
-      LEFT OUTER JOIN tasks_comment ON tasks.task_id = tasks_comment.task_id
-      LEFT OUTER JOIN feed ON project_mst.project_id = feed.project_id
-      LEFT OUTER JOIN feed_comment ON feed.feed_id = feed_comment.feed_id
-      WHERE project_mst.project_id = ${projectId};
-    `;
-    connection.query(query, (error, result) => {
-      if (error) {
-        console.log(error);
-        res.sendStatus(500);
-      } else {
-        res.sendStatus(200);
-      }
-    });
-  }, 
-
   empowerMst: async (req, res) => {
-    const projectId = req.query.pid;
+    const prjId = req.query.pid;
     const { oldMasterId, newMasterId } = req.body;
 
     const query = `
-      UPDATE project_members pm
-      JOIN project_mst pmst ON pmst.project_id = pm.project_id
+      UPDATE project_mbr pm
+      JOIN project_mst pmst ON pmst.prj_id = pm.prj_id
       SET pm.role = CASE
           WHEN pm.user_id = ${oldMasterId} THEN 'member'
           WHEN pm.user_id = ${newMasterId} THEN 'master'
           ELSE pm.role
         END
-      WHERE pm.project_id = ${projectId}
+      WHERE pm.prj_id = ${prjId}
     `;
 
     connection.query(query, (error, result) => {
@@ -147,15 +138,15 @@ const projectCtrl = {
   }, //fcm
 
   createRule: async (req, res) => {
-    const project_id = req.query.pid;
+    const prjId = req.query.pid;
     const rule = req.body.rule;
 
     const query = `
-        INSERT INTO project_rules (project_id, rule)
-        VALUES (${project_id}, '${rule}')
+        INSERT INTO project_rules (prj_id, rule)
+        VALUES (${prjId}, '${rule}')
       `;
     connection.query(query, (error, result) => {
-      if (error){
+      if (error) {
         console.log(error);
         res.sendStatus(500);
       }
@@ -164,12 +155,12 @@ const projectCtrl = {
   },
 
   deleteRule: async (req, res) => {
-    const rule_id = req.query.rid;
+    const ruleId = req.query.rid;
 
-    const query = `DELETE FROM project_rules WHERE rule_id = ${rule_id}`;
+    const query = `DELETE FROM project_rules WHERE rule_id = ${ruleId}`;
 
     connection.query(query, (error, result) => {
-      if (error){
+      if (error) {
         console.log(error);
         res.sendStatus(500);
       }
@@ -184,44 +175,46 @@ const projectCtrl = {
     const searchKeyword = req.query.searchKeyword || "";
     const categories = req.query.category || [];
     const sort = req.query.sort || "";
+    let queryMatrix = [];
 
     let query = `
       SELECT 
-        p.project_id, 
+        p.prj_id, 
+        p.mst_id,
         p.title, 
         p.category, 
-        p.description,
+        p.prj_desc,
         p.goal, 
         p.start_on, 
         p.expire_on, 
-        COUNT(pm.pmember_id) AS member_count, 
+        COUNT(pm.prj_mbr_id) AS member_count, 
         u.name AS master_name, 
         u.introduce AS master_introduce, 
         u.image_url AS master_image_url 
       FROM project_mst p 
-      LEFT JOIN project_members pm ON p.project_id = pm.project_id 
-      LEFT JOIN user_dtl u ON p.master_id = u.user_id
+      LEFT JOIN project_mbr pm ON p.prj_id = pm.prj_id 
+      LEFT JOIN user_dtl u ON p.mst_id = u.user_id
     `;
 
     if (searchKeyword) {
-      query += ` WHERE p.title LIKE '%${searchKeyword}%'`;
+      queryMatrix.push(`p.title LIKE '%${searchKeyword}%'`);
     }
 
     if (categories && Array.isArray(categories)) {
-      if (searchKeyword){
-        query += ` AND `
-      } else {
-        query += ` WHERE`
-      }
       if (categories.length > 0) {
         const categoryFilter = categories
           .map((category) => `p.category = ${category}`)
           .join(" OR ");
-        query += ` (${categoryFilter})`;
+        queryMatrix.push(`(${categoryFilter})`);
       }
     }
-    
-    query += ` GROUP BY p.project_id, p.title, p.category, p.description, p.goal, p.start_on, p.expire_on, u.name, u.introduce, u.image_url`;
+
+    if (queryMatrix.length > 0) {
+      query += ` WHERE ${queryMatrix.join(" AND ")}`;
+    }
+
+    query += ` 
+    GROUP BY p.prj_id, p.title, p.mst_id, p.category, p.prj_desc, p.goal, p.start_on, p.expire_on, u.name, u.introduce, u.image_url`;
 
     if (sort) {
       switch (sort) {
@@ -266,12 +259,12 @@ const projectCtrl = {
   },
 
   getProject: async (req, res) => {
-    const project_id = req.query.pid;
+    const prjId = req.query.pid;
 
     const query = `
       SELECT *
       FROM project_mst pm
-      WHERE pm.project_id = ${project_id}
+      WHERE pm.prj_id = ${prjId}
     `;
 
     connection.query(query, (error, rows) => {
@@ -284,16 +277,16 @@ const projectCtrl = {
   },
 
   getRules: async (req, res) => {
-    const project_id = req.query.pid;
+    const prjId = req.query.pid;
 
     const query = `
       SELECT *
       FROM project_rules
-      WHERE project_id = ${project_id}
+      WHERE prj_id = ${prjId}
     `;
 
     connection.query(query, (error, rows) => {
-      if (error){
+      if (error) {
         console.log(error);
         res.sendStatus(500);
       }
@@ -311,7 +304,7 @@ const projectCtrl = {
     `;
     // in flutter : accept(->member) or denied(->row delete)
     connection.query(query, (error, result) => {
-      if (error){
+      if (error) {
         res.sendStatus(500);
       }
       res.sendStatus(200);
@@ -324,14 +317,13 @@ const projectCtrl = {
 
     const query = `UPDATE project_members SET role=${role} WHERE user_id=${user_id} AND project_id=${project_id}`;
     connection.query(query, (error, result) => {
-      if (error){
+      if (error) {
         res.sendStatus(500);
       }
       res.sendStatus(200);
     });
-
   }, //fcm
-  
+
   getMembers: async (req, res) => {
     const project_id = req.query.pid;
     const query = `
@@ -342,7 +334,7 @@ const projectCtrl = {
       WHERE pm.project_id=${project_id}
     `;
     connection.query(query, (error, rows) => {
-      if (error){
+      if (error) {
         res.sendStatus(500);
       }
       res.send(rows);
@@ -352,8 +344,151 @@ const projectCtrl = {
   inviteMember: async (req, res) => {
     const { project_id, user_id } = req.body;
     fcmCtrl.invitePush();
+  },
 
-  }
+  deletePrj: async (req, res) => {
+    const prjId = req.query.pid;
+
+    connection.beginTransaction((error) => {
+      if (error) {
+        console.error(error);
+        return res.sendStatus(500);
+      }
+      const taskCmtReply = `
+        DELETE FROM task_cmt_reply WHERE task_cmt_id IN (
+          SELECT task_cmt_id FROM task_cmt WHERE task_id IN (
+            SELECT task_id FROM task WHERE prj_id = ${prjId}))`;
+
+      connection.query(taskCmtReply, (error, result) => {
+        if (error) {
+          console.error(error);
+          connection.rollback(() => {
+            return res.sendStatus(500);
+          });
+        }
+      });
+      const taskCmt = `
+      DELETE FROM task_cmt WHERE task_id IN (
+        SELECT task_id FROM task WHERE prj_id = ${prjId})`;
+      connection.query(taskCmt, (error, result) => {
+        if (error) {
+          console.error(error);
+          connection.rollback(() => {
+            return res.sendStatus(500);
+          });
+        }
+      });
+      const feedCmtReply = `DELETE FROM feed_cmt_reply WHERE feed_cmt_id IN (
+        SELECT feed_cmt_id FROM feed_cmt WHERE feed_id IN (
+            SELECT feed_id FROM feed WHERE prj_id = ${prjId}))`;
+      connection.query(feedCmtReply, (error, result) => {
+        if (error) {
+          console.error(error);
+          connection.rollback(() => {
+            return res.sendStatus(500);
+          });
+        }
+      });
+      const feedCmt = `DELETE FROM feed_cmt WHERE feed_id IN (
+      SELECT feed_id FROM feed WHERE prj_id = ${prjId})`;
+
+      connection.query(feedCmt, (error, result) => {
+        if (error) {
+          console.error(error);
+          connection.rollback(() => {
+            return res.sendStatus(500);
+          });
+        }
+      });
+      const userPrj = `DELETE FROM user_prj WHERE prj_id = ${prjId}`;
+
+      connection.query(userPrj, (error, result) => {
+        if (error) {
+          console.error(error);
+          connection.rollback(() => {
+            return res.sendStatus(500);
+          });
+        }
+      });
+      const userTask = `DELETE FROM user_task WHERE task_id IN (
+          SELECT task_id FROM task WHERE prj_id = ${prjId})`;
+      connection.query(userTask, (error, result) => {
+        if (error) {
+          console.error(error);
+          connection.rollback(() => {
+            return res.sendStatus(500);
+          });
+        }
+      });
+      const taskDtl = `
+          DELETE FROM task_dtl WHERE task_id IN (
+            SELECT task_id FROM task WHERE prj_id = ${prjId}
+        )`;
+      connection.query(taskDtl, (error, result) => {
+        if (error) {
+          console.error(error);
+          connection.rollback(() => {
+            return res.sendStatus(500);
+          });
+        }
+      });
+      const mileStone = `DELETE FROM project_ms WHERE prj_id = ${prjId}`;
+      connection.query(mileStone, (error, result) => {
+        if (error) {
+          console.error(error);
+          connection.rollback(() => {
+            return res.sendStatus(500);
+          });
+        }
+      });
+      const taskDel = `DELETE FROM task WHERE prj_id = ${prjId}`;
+
+      connection.query(taskDel, (error, result) => {
+        if (error) {
+          console.error(error);
+          connection.rollback(() => {
+            return res.sendStatus(500);
+          });
+        }
+      });
+      const prjRule = `DELETE FROM project_rules WHERE prj_id = ${prjId}`;
+      connection.query(prjRule, (error, result) => {
+        if (error) {
+          console.error(error);
+          connection.rollback(() => {
+            return res.sendStatus(500);
+          });
+        }
+      });
+      const prjMember = `DELETE FROM project_mbr WHERE prj_id = ${prjId}`;
+      connection.query(prjMember, (error, reseult) => {
+        if (error) {
+          console.error(error);
+          connection.rollback(() => {
+            return res.sendStatus(500);
+          });
+        }
+      });
+      const prjDel = `DELETE FROM project_mst WHERE prj_id = ${prjId}`;
+      connection.query(prjDel, (error, result) => {
+        if (error) {
+          console.error(error);
+          connection.rollback(() => {
+            return res.sendStatus(500);
+          });
+        }
+      });
+      connection.commit((error) => {
+        if (error) {
+          console.error(error);
+          connection.rollback(() => {
+            return res.sendStatus(500);
+          });
+        }
+        res.sendStatus(200);
+      });
+    });
+  },
 };
 
 module.exports = projectCtrl;

@@ -3,42 +3,46 @@ const bcrypt = require("bcrypt");
 
 const userCtrl = {
   registUserData: async (req, res) => {
-    const { username, password, name, contact, device_token, fb_uid } =
+    const { username, user_pw, name, contact, device_token, fb_uid } =
       req.body;
-    const hashedPassword = await bcrypt.hash(password, 10);
+      console.log(req.body);
+    const hashedPassword = await bcrypt.hash(user_pw, 10);
     connection.beginTransaction((error) => {
       if (error) throw error;
 
       const userMstQuery = `
-                INSERT INTO user_mst (username, password, device_token, fb_uid) 
+                INSERT INTO user_mst (username, user_pw, device_token, fb_uid) 
                 VALUES ('${username}','${hashedPassword}','${device_token}','${fb_uid}')`;
       connection.query(userMstQuery, (error, result) => {
         if (error) {
           connection.rollback(() => {
             console.log(error);
+            console.log(result);
             throw error;
           });
         }
         const userId = result.insertId;
-        const userDtlQuery = `INSERT INTO user_dtl (user_id, name, contact) VALUES (${userId}, '${name}', '${contact}')`;
+        const userDtlQuery = `INSERT INTO user_dtl (user_id, name, contact) VALUES (${userId}, '${name}', ${contact != null ? `'${contact}'` : null})`;
         connection.query(userDtlQuery, (error) => {
           if (error) {
             connection.rollback(() => {
               throw error;
             });
           }
+        
           connection.commit((error) => {
             if (error) {
               connection.rollback(() => {
                 throw error;
               });
             }
+            console.log(result);
             res.status(200).send({ user_id: userId });
           });
         });
       });
     });
-  }, // add duplication check for account
+  }, 
 
   registGoogleUser: async (req, res) => {
     const { username, name, device_token, fb_uid, contact } = req.body;
@@ -89,16 +93,16 @@ const userCtrl = {
         ud.contact,
         ud.introduce,
         ud.image_url,
-        ud.state,
-        ud.subscription_deadline,
-        COUNT(DISTINCT up.project_id) AS project_count,
+        ud.sub_state,
+        ud.sub_deadline,
+        COUNT(DISTINCT up.prj_id) AS project_count,
         COUNT(DISTINCT ut.task_id) AS task_count
       FROM user_mst um
       LEFT JOIN user_dtl ud ON um.user_id = ud.user_id
-      LEFT JOIN user_project up ON um.user_id = up.user_id
-      LEFT JOIN user_tasks ut ON um.user_id = ut.user_id
+      LEFT JOIN user_prj up ON um.user_id = up.user_id
+      LEFT JOIN user_task ut ON um.user_id = ut.user_id
       WHERE um.user_id = ${userId}
-      GROUP BY um.username, um.fb_uid, ud.create_at, ud.update_at, ud.latest_access, ud.name, ud.contact, ud.introduce, ud.image_url, ud.state, ud.subscription_deadline;
+      GROUP BY um.username, um.fb_uid, ud.create_at, ud.update_at, ud.latest_access, ud.name, ud.contact, ud.introduce, ud.image_url, ud.sub_state, ud.sub_deadline;
     `;
 
     connection.query(query, (error, result) => {
@@ -124,9 +128,9 @@ const userCtrl = {
         ud.contact,
         ud.introduce,
         ud.image_url,
-        ud.state,
-        ud.subscription_deadline,
-        COUNT(DISTINCT up.project_id) AS project_count,
+        ud.sub_state,
+        ud.sub_deadline,
+        COUNT(DISTINCT up.prj_id) AS project_count,
         COUNT(DISTINCT ut.task_id) AS task_count
       FROM user_mst um
       LEFT JOIN user_dtl ud ON um.user_id = ud.user_id
@@ -143,22 +147,30 @@ const userCtrl = {
   },
 
   modUserDtl: async (req, res) => {
-    const user_id = req.query.uid;
-    const { name, introduce, image_url } = req.body;
+    const userId = req.query.uid;
+    const { name, contact, introduce, image_url } = req.body;
     let query = `
         UPDATE user_dtl 
         SET `;
+    let queryMatrix = [];
 
     if (name) {
-      query += `name = '${name}', `;
+      queryMatrix.push(`name = '${name}'`);
+    }
+    if (contact) {
+      queryMatrix.push(`contact = '${contact}'`);
     }
     if (introduce) {
-      query += `introduce = '${introduce}', `;
+      queryMatrix.push(`introduce = '${introduce}'`);
     }
     if (image_url) {
-      query += `image_url = '${image_url}' `;
+      queryMatrix.push(`image_url = '${image_url}'`);
     }
-    query += `WHERE user_id = ${user_id}`;
+  
+    if (queryMatrix.length > 0) {
+      query += `${queryMatrix.join(", ")} `;
+    }
+    query += ` WHERE user_id = ${userId}`;
 
     connection.query(query, (error, rows) => {
       if (error) {
@@ -242,3 +254,13 @@ const userCtrl = {
 };
 
 module.exports = userCtrl;
+
+
+// ResultSetHeader {
+//   fieldCount: 0,
+//   affectedRows: 1,
+//   insertId: 3,
+//   info: '',
+//   serverStatus: 3,
+//   warningStatus: 0
+// }
