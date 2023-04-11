@@ -15,39 +15,56 @@ const projectCtrl = {
     } = req.body;
     const mstId = req.query.uid;
     const pvt = req.query.private;
-
+  
     connection.beginTransaction((error) => {
       if (error) {
         console.error(error);
         return res.sendStatus(500);
       }
-
-      let mstQuery;
-
+  
+      let mstQueryValues = [
+        title,
+        category,
+        mstId,
+        prj_desc,
+        goal,
+        start_on || null,
+        expire_on || null,
+      ];
+  
+      let mstQueryColumns = [
+        "title",
+        "category",
+        "mst_id",
+        "prj_desc",
+        "goal",
+        "start_on",
+        "expire_on",
+      ];
+  
       if (pvt == 1) {
-        mstQuery = `
-          INSERT INTO project_mst (title, category, mst_id, prj_desc, goal, start_on, expire_on, pvt, prj_pw) 
-          VALUES ('${title}', ${category}, ${mstId}, '${prj_desc}', '${goal}', '${start_on}', '${expire_on}', ${pvt}, '${prj_pw}')`;
-      } else {
-        mstQuery = `
-          INSERT INTO project_mst (title, category, mst_id, prj_desc, goal, start_on, expire_on) 
-          VALUES ('${title}', ${category}, ${mstId}, '${prj_desc}', '${goal}', '${start_on}', '${expire_on}')`;
+        mstQueryColumns.push("pvt", "prj_pw");
+        mstQueryValues.push(pvt, prj_pw);
       }
-
-      connection.query(mstQuery, (error, result) => {
+  
+      let mstQuery = `
+        INSERT INTO project_mst (${mstQueryColumns.join(", ")}) 
+        VALUES (?, ?, ?, ?, ?, ?, ? ${pvt == 1 ? ", ?, ?" : ""})`;
+  
+      connection.query(mstQuery, mstQueryValues, (error, result) => {
         if (error) {
           console.error(error);
           connection.rollback(() => {
             return res.sendStatus(500);
           });
         }
-
+  
         const prjId = result.insertId;
-
+  
         if (rules && rules.length > 0) {
           const ruleValues = rules.map((rule) => [prjId, rule]);
-          const ruleQuery = `INSERT INTO project_rules (prj_id, rule) VALUES ${ruleValues}`;
-          connection.query(ruleQuery, (error, result) => {
+          const ruleQuery = `INSERT INTO project_rules (prj_id, rule) VALUES ?`;
+          connection.query(ruleQuery, [ruleValues], (error, result) => {
             if (error) {
               console.error(error);
               connection.rollback(() => {
@@ -56,8 +73,8 @@ const projectCtrl = {
             }
           });
         }
-
-        const memberQuery = `INSERT INTO project_members (prj_id, user_id, role) VALUES (${prjId}, ${mstId}, 'master')`;
+  
+        const memberQuery = `INSERT INTO project_mbr (prj_id, user_id, role) VALUES (${prjId}, ${mstId}, 0)`;
         connection.query(memberQuery, (error, result) => {
           if (error) {
             console.error(error);
@@ -66,7 +83,7 @@ const projectCtrl = {
             });
           }
         });
-
+  
         connection.commit((error) => {
           if (error) {
             console.error(error);
@@ -79,6 +96,7 @@ const projectCtrl = {
       });
     });
   },
+  // Transaction 씹히고 생성되는 문제가 있음
 
   updatePrj: async (req, res) => {
     const prjId = req.query.pid;
