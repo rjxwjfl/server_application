@@ -118,30 +118,20 @@ const userCtrl = {
   getUserData: async (req, res) => {
     const userId = req.query.uid;
     const query = `
-      SELECT 
-        um.username,
-        um.fb_uid,
-        ud.create_at,
-        ud.update_at,
-        ud.latest_access,
-        ud.name,
-        ud.contact,
-        ud.introduce,
-        ud.image_url,
-        ud.sub_state,
-        ud.sub_deadline,
-        COUNT(DISTINCT up.prj_id) AS project_count,
-        COUNT(DISTINCT ut.task_id) AS task_count
-      FROM user_mst um
-      LEFT JOIN user_dtl ud ON um.user_id = ud.user_id
-      WHERE um.user_id = ${userId};
-    `;
-
+      SELECT *
+        FROM user_dtl
+        WHERE user_id = ${userId};
+        `;
+        // COUNT(DISTINCT up.prj_id) AS project_count,
+        // COUNT(DISTINCT ut.task_id) AS task_count 
+        // 1. Let's just write a query one more time.
+        // 2. Let's get the whole dtl on Flutter or build a new model.
     connection.query(query, (error, result) => {
       if (error){
         console.log(error);
         res.sendStatus(500);
       }
+      console.log(result);
       res.status(200).send(result);
     });
   },
