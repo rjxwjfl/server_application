@@ -9,12 +9,12 @@ router.route("/")
 
 router.route("/rule")
     .get(projectCtrl.getRules)
-    .post(projectCtrl.createRule)
+    .post(projectCtrl.setRule)
     .delete(projectCtrl.deleteRule);
 
 router.route("/member")
     .get(projectCtrl.getMembers)
-    .post(projectCtrl.joinProject)
+    .post(projectCtrl.acceptJoin)
     .put(projectCtrl.adjustRole);
 
 router.route("/dtl")

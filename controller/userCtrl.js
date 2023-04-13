@@ -5,35 +5,44 @@ const userCtrl = {
   registUserData: async (req, res) => {
     const { username, user_pw, name, contact, device_token, fb_uid } =
       req.body;
-      console.log(req.body);
     const hashedPassword = await bcrypt.hash(user_pw, 10);
     connection.beginTransaction((error) => {
-      if (error) throw error;
+      if (error){
+        console.log(error);
+        res.sendStatus(500);
+      };
 
       const userMstQuery = `
                 INSERT INTO user_mst (username, user_pw, device_token, fb_uid) 
-                VALUES ('${username}','${hashedPassword}','${device_token}','${fb_uid}')`;
-      connection.query(userMstQuery, (error, result) => {
+                VALUES (?, ?, ?, ?)`;
+      const userMstValue = [username, hashedPassword, device_token, fb_uid];
+
+      connection.query(userMstQuery, userMstValue, (error, result) => {
         if (error) {
           connection.rollback(() => {
             console.log(error);
-            console.log(result);
-            throw error;
+            res.sendStatus(500);
           });
         }
         const userId = result.insertId;
-        const userDtlQuery = `INSERT INTO user_dtl (user_id, name, contact) VALUES (${userId}, '${name}', ${contact != null ? `'${contact}'` : null})`;
-        connection.query(userDtlQuery, (error) => {
+        const userDtlQuery = `
+                INSERT INTO user_dtl (user_id, name, contact) 
+                VALUES (?, ?, ?)`;
+        const userDtlValue = [userId, name, contact];
+
+        connection.query(userDtlQuery, userDtlValue, (error) => {
           if (error) {
             connection.rollback(() => {
-              throw error;
+              console.log(error);
+              res.sendStatus(500);
             });
           }
         
           connection.commit((error) => {
             if (error) {
               connection.rollback(() => {
-                throw error;
+                console.log(error);
+                res.sendStatus(500);
               });
             }
             console.log(result);
@@ -45,33 +54,48 @@ const userCtrl = {
   }, 
 
   registGoogleUser: async (req, res) => {
-    const { username, name, device_token, fb_uid, contact } = req.body;
+    const { username, name, contact, device_token, fb_uid } = req.body;
+    
     connection.beginTransaction((error) => {
-      if (error) throw error;
+      if (error){
+        console.log(error);
+        res.sendStatus(500);
+      };
 
       const userMstQuery = `
                 INSERT INTO user_mst (username, device_token, fb_uid) 
-                VALUES (${username}, ${name}, ${device_token}, ${fb_uid})`;
-      connection.query(userMstQuery, (error, result) => {
+                VALUES (?, ?, ?)`;
+      const userMstValue = [username, device_token, fb_uid];
+
+      connection.query(userMstQuery, userMstValue,(error, result) => {
         if (error) {
           connection.rollback(() => {
-            throw error;
+            console.log(error);
+            res.sendStatus(500);
           });
         }
+
         const userId = result.insertId;
-        const userDtlQuery = `INSERT INTO user_dtl (user_id, name, contact) VALUES (${userId}, '${name}', '${contact}')`;
-        connection.query(userDtlQuery, (error) => {
+        const userDtlQuery = `
+          INSERT INTO user_dtl (user_id, name, contact) 
+          VALUES (?, ?, ?)`;
+        const userDtlValue = [userId, name, contact];
+
+        connection.query(userDtlQuery, userDtlValue, (error) => {
           if (error) {
             connection.rollback(() => {
-              throw error;
+        console.log(error);
+        res.sendStatus(500);
             });
           }
           connection.commit((error) => {
             if (error) {
               connection.rollback(() => {
-                throw error;
+                console.log(error);
+                res.sendStatus(500);
               });
             }
+            console.log(result);
             res.status(200).send({ user_id: userId });
           });
         });
@@ -95,17 +119,14 @@ const userCtrl = {
         ud.image_url,
         ud.sub_state,
         ud.sub_deadline,
-        COUNT(DISTINCT up.prj_id) AS project_count,
-        COUNT(DISTINCT ut.task_id) AS task_count
       FROM user_mst um
       LEFT JOIN user_dtl ud ON um.user_id = ud.user_id
       LEFT JOIN user_prj up ON um.user_id = up.user_id
       LEFT JOIN user_task ut ON um.user_id = ut.user_id
-      WHERE um.user_id = ${userId}
-      GROUP BY um.username, um.fb_uid, ud.create_at, ud.update_at, ud.latest_access, ud.name, ud.contact, ud.introduce, ud.image_url, ud.sub_state, ud.sub_deadline;
+      WHERE um.user_id = ?
     `;
 
-    connection.query(query, (error, result) => {
+    connection.query(query, [userId], (error, result) => {
       if (error) {
         console.log(error);
         res.sendStatus(500);
@@ -120,13 +141,13 @@ const userCtrl = {
     const query = `
       SELECT *
         FROM user_dtl
-        WHERE user_id = ${userId};
+        WHERE user_id = ?
         `;
         // COUNT(DISTINCT up.prj_id) AS project_count,
         // COUNT(DISTINCT ut.task_id) AS task_count 
         // 1. Let's just write a query one more time.
         // 2. Let's get the whole dtl on Flutter or build a new model.
-    connection.query(query, (error, result) => {
+    connection.query(query, [userId], (error, result) => {
       if (error){
         console.log(error);
         res.sendStatus(500);
@@ -139,30 +160,14 @@ const userCtrl = {
   modUserDtl: async (req, res) => {
     const userId = req.query.uid;
     const { name, contact, introduce, image_url } = req.body;
-    let query = `
+    const query = `
         UPDATE user_dtl 
-        SET `;
-    let queryMatrix = [];
+        SET name=?, contact=?, introduce=?, image_url=?
+        WHERE user_id = ?
+        `;
+    const queryValue = [name, contact, introduce, image_url, userId];
 
-    if (name) {
-      queryMatrix.push(`name = '${name}'`);
-    }
-    if (contact) {
-      queryMatrix.push(`contact = '${contact}'`);
-    }
-    if (introduce) {
-      queryMatrix.push(`introduce = '${introduce}'`);
-    }
-    if (image_url) {
-      queryMatrix.push(`image_url = '${image_url}'`);
-    }
-  
-    if (queryMatrix.length > 0) {
-      query += `${queryMatrix.join(", ")} `;
-    }
-    query += ` WHERE user_id = ${userId}`;
-
-    connection.query(query, (error, rows) => {
+    connection.query(query, queryValue, (error, rows) => {
       if (error) {
         console.error(error);
         res.sendStatus(500);
@@ -174,10 +179,10 @@ const userCtrl = {
 
   changeUserPw: async (req, res) => {
     const { old_password, new_password } = req.body;
-    const userId = req.params.id;
+    const userId = req.query.uid;
 
     if (old_password && new_password) {
-      const select = `SELECT password FROM user_mst WHERE user_id = ${userId}`;
+      const select = `SELECT user_pw FROM user_mst WHERE user_id = ${userId}`;
       connection.query(select, async (error, result) => {
         if (error) {
           console.error(error);
@@ -188,13 +193,15 @@ const userCtrl = {
             const isMatch = await bcrypt.compare(old_password, user.password);
             if (isMatch) {
               const hashedPassword = await bcrypt.hash(new_password, 10);
-              const updated = `UPDATE user_mst SET password = ${hashedPassword} WHERE user_id = ${userId}`;
-              connection.query(updated, (error, results) => {
+              const updated = `UPDATE user_mst SET user_pw = ? WHERE user_id = ?`;
+              const updatedValue = [hashedPassword, userId];
+
+              connection.query(updated, updatedValue, (error, results) => {
                 if (error) {
                   console.error(error);
-                  res.status(500).send("Internal server error");
+                  res.sendStatus(500);
                 } else {
-                  res.status(200).send("Password changed successfully");
+                  res.sendStatus(200);
                 }
               });
             } else {
@@ -215,21 +222,24 @@ const userCtrl = {
 
     const query = `
           SELECT 
-            p.project_id, 
+            p.prj_id, 
+            p.mst_id,
             p.title, 
             p.category, 
-            p.description,
+            p.prj_desc,
             p.goal, 
             p.start_on, 
             p.expire_on, 
-            COUNT(pm.project_member_id) AS member_count, 
+            p.pvt,
+            COUNT(pm.prj_mbr_id) AS member_count, 
             u.name AS master_name, 
             u.introduce AS master_introduce, 
             u.image_url AS master_image_url 
-          FROM project_mst p 
+          FROM user_prj up
+          LEFT JOIN project_mst p ON up.prj_id = p.prj_id
           LEFT JOIN project_member pm ON p.project_id = pm.project_id 
           LEFT JOIN user_dtl u ON p.master_id = u.user_id
-          WHERE p.master_id = ${userId}
+          WHERE up.user_id = ${userId}
           GROUP BY p.project_id, p.title, p.category, p.description, p.goal, p.start_on, p.expire_on, u.name, u.introduce, u.image_url;
         `;
 

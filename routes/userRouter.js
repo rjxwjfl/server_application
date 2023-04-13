@@ -2,6 +2,7 @@ const userCtrl = require("../controller/userCtrl");
 const router = require("express").Router();
 
 router.route('/')
+    .get()
     .post(userCtrl.registUserData)
     .put(userCtrl.modUserDtl);
 
