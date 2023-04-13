@@ -71,7 +71,7 @@ CREATE TABLE project_ms (
   task_id INT,
   ms_title VARCHAR(50),
   ms_content VARCHAR(255),
-  ms_state BOOLEAN NOT NULL DEFAULT 0
+  ms_state INT NOT NULL DEFAULT 0
   -- milestone complete date => task complete_at
 );
 
@@ -87,8 +87,7 @@ CREATE TABLE task (
   complete_at TIMESTAMP,
   start_on TIMESTAMP NOT NULL,
   expire_on TIMESTAMP NOT NULL,
-  task_state BOOLEAN NOT NULL DEFAULT 0,
-  task_att TEXT
+  task_state INT NOT NULL DEFAULT 0,
 );
 
 CREATE TABLE task_dtl (
@@ -97,8 +96,7 @@ CREATE TABLE task_dtl (
   pic_id INT NOT NULL,
   task_dtl_cnt VARCHAR(255),
   user_prog INT NOT NULL DEFAULT 0,
-  user_eval INT NOT NULL DEFAULT 0,
-  task_dtl_att TEXT
+  user_eval INT DEFAULT 0
   -- prog = progress // eval = evaluation
   -- user_eval would be null
 );
@@ -114,6 +112,7 @@ CREATE TABLE task_cmt (
 
 CREATE TABLE task_cmt_reply(
   task_reply_id	INT AUTO_INCREMENT PRIMARY KEY,
+  task_id INT NOT NULL,
   task_cmt_id INT NOT NULL,
   author_id INT NOT NULL,
   task_reply_cnt VARCHAR(255) NOT NULL,
@@ -142,9 +141,30 @@ CREATE TABLE feed_cmt (
 
 CREATE TABLE feed_cmt_reply(
   feed_reply_id	INT AUTO_INCREMENT PRIMARY KEY,
+  feed_id INT NOT NULL,
   feed_cmt_id INT NOT NULL,
   author_id INT NOT NULL,
   feed_reply_cnt VARCHAR(255) NOT NULL,
+  create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE task_att(
+  task_att_id INT AUTO_INCREMENT PRIMARY KEY,
+  prj_id INT NOT NULL,
+  task_id INT NOT NULL,
+  att_user INT NOT NULL,
+  task_att TEXT NOT NULL,
+  create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE task_dtl_att(
+  task_dtl_att_id INT AUTO_INCREMENT PRIMARY KEY,
+  prj_id INT NOT NULL,
+  task_id INT NOT NULL,
+  att_user INT NOT NULL,
+  task_att TEXT NOT NULL,
   create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
