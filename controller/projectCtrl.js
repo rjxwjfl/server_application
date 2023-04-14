@@ -1,3 +1,4 @@
+const e = require("express");
 const connection = require("../configs/dbConfig");
 const fcmCtrl = require("./fcmCtrl");
 
@@ -239,10 +240,11 @@ const projectCtrl = {
   },
 
   searchPrj: async (req, res) => {
-    const page = req.query.page || 1;
+    const page = req.query.pg || 1;
     const limit = 20;
     const offset = (page - 1) * limit;
-    const searchKeyword = req.query.searchKeyword;
+    const searchKeyword = req.query.sk;
+    const sort = req.query.st;
 
     let query = `
       SELECT 
@@ -264,10 +266,25 @@ const projectCtrl = {
       LEFT JOIN user_dtl u ON p.mst_id = u.user_id
       ${searchKeyword? `WHERE p.title LIKE ?` : ``}
       GROUP BY p.prj_id, p.title, p.mst_id, p.category, p.prj_desc, p.goal, p.start_on, p.expire_on, u.name, u.introduce, u.image_url
+      ORDER BY ?
       LIMIT ? OFFSET ?
     `;
 
-    let queryValue = searchKeyword? [ `%${searchKeyword}%`, limit, offset ]:[ limit, offset];
+    const orderOption =  () => {
+      const map = {
+        1: `p.start_on DESC`,
+        2: `p.start_on ASC`,
+        3: `p.expire_on DESC`,
+        4: `p.expire_on ASC`,
+        5: `member_count DESC`,
+        6: `member_count ASC`,
+        7: `p.title ASC`,
+      };
+      const order = map[sort] ?? `p.title DESC`;
+      return order;
+    }
+
+    let queryValue = searchKeyword? [ `%${searchKeyword}%`, orderOption(sort), limit, offset ]:[ orderOption(sort), limit, offset];
 
     connection.query(query, queryValue, (error, rows) => {
       if (error) {
@@ -322,9 +339,9 @@ const projectCtrl = {
       FROM project_mbr pm
       LEFT JOIN user_dtl ud ON pm.user_id = ud.user_id
       LEFT JOIN task_dtl td ON pm.user_id = td.pic_id
-      WHERE pm.prj_id=${prjId}
+      WHERE pm.prj_id=?
     `;
-    connection.query(query, (error, rows) => {
+    connection.query(query, [prjId], (error, rows) => {
       if (error) {
         res.sendStatus(500);
       }
@@ -338,155 +355,32 @@ const projectCtrl = {
   },
 
   purgeUser: (req, res) => {
-    const prjId = req.query.pid;
     const userId = req.query.uid;
+    const prjId = req.query.pid;
 
-    connection.beginTransaction((error) => {
-      if (error) {
+    const query = `
+      CALL purgeUser(?, ?)
+    `;
+    const queryValue = [userId, prjId];
+
+    connection.query(query, queryValue, (error, result) => {
+      if (error){
         console.error(error);
         return res.sendStatus(500);
       }
-      const query = `
-        DELETE
-          td, tc, tcr
-        FROM task t
-        LEFT JOIN task_dtl td ON td.task_id = t.task_id
-        LEFT JOIN task_cmt tc ON tc.task_id = t.task_id
-        LEFT JOIN task_cmt_reply tcr ON tcr.task_cmt_id = tc.task_cmt_id
-        WHERE t.prj_id = ${prjId} AND td.pic_id = ${userId};
-      `;
-      connection.query(query, (error, result) => {
-          if (error) {
-            console.error(error);
-            return connection.rollback(() => {
-              res.sendStatus(500);
-            });
-          }
-
-          connection.query(
-            "DELETE FROM task_cmt WHERE user_id = ?",
-            [userId],
-            (error, result) => {
-              if (error) {
-                console.error(error);
-                return connection.rollback(() => {
-                  res.sendStatus(500);
-                });
-              }
-
-              connection.query(
-                "DELETE FROM feed_cmt_reply WHERE cmt_id IN (SELECT id FROM feed_cmt WHERE user_id = ?)",
-                [userId],
-                (error, result) => {
-                  if (error) {
-                    console.error(error);
-                    return connection.rollback(() => {
-                      res.sendStatus(500);
-                    });
-                  }
-
-                  connection.query(
-                    "DELETE FROM feed_cmt WHERE user_id = ?",
-                    [userId],
-                    (error, result) => {
-                      if (error) {
-                        console.error(error);
-                        return connection.rollback(() => {
-                          res.sendStatus(500);
-                        });
-                      }
-
-                      connection.query(
-                        "DELETE FROM feed WHERE user_id = ?",
-                        [userId],
-                        (error, result) => {
-                          if (error) {
-                            console.error(error);
-                            return connection.rollback(() => {
-                              res.sendStatus(500);
-                            });
-                          }
-
-                          connection.query(
-                            "DELETE FROM task_dtl WHERE pic_id = ?",
-                            [userId],
-                            (error, result) => {
-                              if (error) {
-                                console.error(error);
-                                return connection.rollback(() => {
-                                  res.sendStatus(500);
-                                });
-                              }
-
-                              connection.query(
-                                "DELETE FROM user_task WHERE user_id = ?",
-                                [userId],
-                                (error, result) => {
-                                  if (error) {
-                                    console.error(error);
-                                    return connection.rollback(() => {
-                                      res.sendStatus(500);
-                                    });
-                                  }
-
-                                  connection.query(
-                                    "DELETE FROM user_prj WHERE user_id = ? AND prj_id = ?",
-                                    [userId, prjId],
-                                    (error, result) => {
-                                      if (error) {
-                                        console.error(error);
-                                        return connection.rollback(() => {
-                                          res.sendStatus(500);
-                                        });
-                                      }
-                                      connection.query(
-                                        "DELETE FROM project_mbr WHERE user_id = ? AND prj_id = ?",
-                                        [userId, prjId],
-                                        (error, result) => {
-                                          if (error) {
-                                            console.error(error);
-                                            return connection.rollback(() => {
-                                              res.sendStatus(500);
-                                            });
-                                          }
-
-                                          connection.commit((error) => {
-                                            if (error) {
-                                              console.error(error);
-                                              return connection.rollback(() => {
-                                                res.sendStatus(500);
-                                              });
-                                            }
-
-                                            return res.sendStatus(200);
-                                          });
-                                        }
-                                      );
-                                    }
-                                  );
-                                }
-                              );
-                            }
-                          );
-                        }
-                      );
-                    }
-                  );
-                }
-              );
-            }
-          );
-        }
-      );
+      return res.sendStatus(200);
     });
-  }, // 수정작업 필요
+  },
 
   deleteRule: async (req, res) => {
     const ruleId = req.query.rid;
 
-    const query = `DELETE FROM project_rules WHERE rule_id = ${ruleId}`;
+    const query = `
+      DELETE 
+      FROM project_rules 
+      WHERE rule_id = ?`;
 
-    connection.query(query, (error, result) => {
+    connection.query(query, [ruleId], (error, result) => {
       if (error) {
         console.log(error);
         res.sendStatus(500);

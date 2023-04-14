@@ -1,14 +1,16 @@
 const userCtrl = require("../controller/userCtrl");
 const router = require("express").Router();
 
-router.route('/')
-    .get()
-    .post(userCtrl.registUserData)
+router.route('/config')
+    .get(userCtrl.getOwnData)
+    .post(userCtrl.regUserData)
     .put(userCtrl.modUserDtl);
 
-router.route('/google').post(userCtrl.registGoogleUser);
 router.route('/pw').post(userCtrl.changeUserPw);
 router.route('/project').get(userCtrl.getMyProject);
-router.route('/info').get(userCtrl.getUserData);
+router.route('/info')
+    .get(userCtrl.getUserData)
+    .post(userCtrl.getUserMst);
+
 
 module.exports = router;
