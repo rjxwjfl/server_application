@@ -246,6 +246,8 @@ const projectCtrl = {
     const searchKeyword = req.query.sk;
     const sort = req.query.st;
 
+    console.log(searchKeyword);
+
     let query = `
       SELECT 
         p.prj_id, 
@@ -284,8 +286,11 @@ const projectCtrl = {
       return order;
     }
 
+    console.log(query);
+
     let queryValue = searchKeyword? [ `%${searchKeyword}%`, orderOption(sort), limit, offset ]:[ orderOption(sort), limit, offset];
 
+    console.log(queryValue);
     connection.query(query, queryValue, (error, rows) => {
       if (error) {
         console.log(error);
