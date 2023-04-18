@@ -246,8 +246,6 @@ const projectCtrl = {
     const searchKeyword = req.query.sk;
     const sort = req.query.st;
 
-    console.log(searchKeyword);
-
     let query = `
       SELECT 
         p.prj_id, 
@@ -286,17 +284,14 @@ const projectCtrl = {
       return order;
     }
 
-    console.log(query);
 
     let queryValue = searchKeyword? [ `%${searchKeyword}%`, orderOption(sort), limit, offset ]:[ orderOption(sort), limit, offset];
 
-    console.log(queryValue);
     connection.query(query, queryValue, (error, rows) => {
       if (error) {
         console.log(error);
         res.sendStatus(500);
       }
-      console.log(rows);
       res.send(rows);
     });
   },
@@ -305,9 +300,13 @@ const projectCtrl = {
     const prjId = req.query.pid;
 
     const query = `
-      SELECT *
-      FROM project_mst pm
-      WHERE pm.prj_id = ?
+    SELECT 
+      pm.prj_id, pm.title, pm.category, pm.mst_id, pm.prj_desc, pm.goal, pm.create_at, pm.start_on, pm.expire_on, pm.pvt, pm.prj_pw, COUNT(mbr.prj_mbr_id) AS member_count
+    FROM project_mst pm
+    LEFT JOIN project_mbr mbr ON pm.prj_id = mbr.prj_id
+    WHERE pm.prj_id = ?
+    GROUP BY 
+      pm.prj_id, pm.title, pm.category, pm.mst_id, pm.prj_desc, pm.goal, pm.create_at, pm.start_on, pm.expire_on, pm.pvt, pm.prj_pw
     `;
 
     connection.query(query, [prjId], (error, rows) => {
@@ -315,6 +314,7 @@ const projectCtrl = {
         console.log(error);
         res.sendStatus(500);
       }
+      console.log(rows);
       res.send(rows);
     });
   },
