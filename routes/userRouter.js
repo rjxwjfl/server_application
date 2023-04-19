@@ -1,6 +1,8 @@
 const userCtrl = require("../controller/userCtrl");
 const router = require("express").Router();
 
+router.route('/').get(userCtrl.getMyRole);
+
 router.route('/config')
     .get(userCtrl.getOwnData)
     .post(userCtrl.regUserData)

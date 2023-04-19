@@ -8,68 +8,20 @@ const projectCtrl = {
     const mstId = req.query.uid;
     const { title, category, prj_desc, goal, start_on, expire_on, pvt, prj_pw } = req.body;
 
-    connection.beginTransaction((error) => {
+    const query = `
+      CALL createPrj(?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    
+    const queryValue = [mstId, title, category, prj_desc, goal, start_on, expire_on, pvt, prj_pw];
+
+    connection.query(query, queryValue, (error, result) => {
       if (error) {
-        console.error(error);
-        return res.sendStatus(500);
+        console.log(error);
+        res.sendStatus(500);
+      } else {
+        console.log(result);
+        res.status(200).send({ prj_id: result[0]["prj_id"] });
       }
-
-      const mstQuery = `
-        INSERT INTO project_mst (title, category, mst_id, prj_desc, goal, start_on, expire_on, pvt, prj_pw)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `;
-      const mstQueryValue = [title, category, mstId, prj_desc, goal, start_on, expire_on, pvt, prj_pw];
-
-      connection.query(mstQuery, mstQueryValue, (error, result) => {
-        if (error) {
-          console.error(error);
-          connection.rollback(() => {
-            return res.sendStatus(500);
-          });
-        }
-
-        const prjId = result.insertId;
-        const mbrQuery = `
-          INSERT INTO project_mbr (prj_id, user_id, role) 
-          VALUES (?, ?, 0)
-        `;
-        const mbrQueryValue = [prjId, mstId];
-
-        connection.query(mbrQuery, mbrQueryValue, (error, result) => {
-          if (error) {
-            console.error(error);
-            connection.rollback(() => {
-              return res.sendStatus(500);
-            });
-          }
-
-          const userPrjQuery = `
-            INSERT INTO user_prj (user_id, prj_id)
-            VALUES (?, ?)
-          `;
-          const userPrjQueryValue = [mstId, prjId];
-
-          connection.query(userPrjQuery, userPrjQueryValue, (error, result) => {
-            if (error) {
-              console.error(error);
-              connection.rollback(() => {
-                return res.sendStatus(500);
-              });
-            }
-
-            connection.commit((error) => {
-              if (error) {
-                console.error(error);
-                connection.rollback(() => {
-                  return res.sendStatus(500);
-                });
-              }
-
-              return res.status(200).send({ prj_id: prjId });
-            });
-          });
-        });
-      });
     });
   },
 
@@ -167,7 +119,7 @@ const projectCtrl = {
   adjustRole: async (req, res) => {
     const prjId = req.query.pid;
     const { user_id, role } = req.body;
-
+  
     const query = `
       UPDATE project_members 
       SET role=? 
@@ -246,6 +198,8 @@ const projectCtrl = {
     const searchKeyword = req.query.sk;
     const sort = req.query.st;
 
+    console.log(searchKeyword);
+
     let query = `
       SELECT 
         p.prj_id, 
@@ -284,14 +238,17 @@ const projectCtrl = {
       return order;
     }
 
+    console.log(query);
 
     let queryValue = searchKeyword? [ `%${searchKeyword}%`, orderOption(sort), limit, offset ]:[ orderOption(sort), limit, offset];
 
+    console.log(queryValue);
     connection.query(query, queryValue, (error, rows) => {
       if (error) {
         console.log(error);
         res.sendStatus(500);
       }
+      console.log(rows);
       res.send(rows);
     });
   },
@@ -300,13 +257,11 @@ const projectCtrl = {
     const prjId = req.query.pid;
 
     const query = `
-    SELECT 
-      pm.prj_id, pm.title, pm.category, pm.mst_id, pm.prj_desc, pm.goal, pm.create_at, pm.start_on, pm.expire_on, pm.pvt, pm.prj_pw, COUNT(mbr.prj_mbr_id) AS member_count
+    SELECT pm.*, COUNT(pmbr.prj_mbr_id) AS member_count
     FROM project_mst pm
-    LEFT JOIN project_mbr mbr ON pm.prj_id = mbr.prj_id
+    LEFT JOIN project_mbr pmbr ON pm.prj_id = pmbr.prj_id
     WHERE pm.prj_id = ?
-    GROUP BY 
-      pm.prj_id, pm.title, pm.category, pm.mst_id, pm.prj_desc, pm.goal, pm.create_at, pm.start_on, pm.expire_on, pm.pvt, pm.prj_pw
+    GROUP BY pm.prj_id
     `;
 
     connection.query(query, [prjId], (error, rows) => {
@@ -314,7 +269,6 @@ const projectCtrl = {
         console.log(error);
         res.sendStatus(500);
       }
-      console.log(rows);
       res.send(rows);
     });
   },
@@ -333,6 +287,7 @@ const projectCtrl = {
         console.log(error);
         res.sendStatus(500);
       }
+      console.log(rows);
       res.send(rows);
     });
   },
@@ -340,16 +295,24 @@ const projectCtrl = {
   getMembers: async (req, res) => {
     const prjId = req.query.pid;
     const query = `
-      SELECT pm.role, ud.name, ud.introduce, ud.image_url, ud.latest_access, tm.progress, tm.evaluation
+      SELECT
+        pm.user_id,
+        pm.role,
+        ud.latest_access,
+        ud.name,
+        ud.contact,
+        ud.introduce,
+        ud.image_url
       FROM project_mbr pm
       LEFT JOIN user_dtl ud ON pm.user_id = ud.user_id
-      LEFT JOIN task_dtl td ON pm.user_id = td.pic_id
-      WHERE pm.prj_id=?
+      WHERE pm.prj_id = ?
     `;
     connection.query(query, [prjId], (error, rows) => {
       if (error) {
+        console.error(error);
         res.sendStatus(500);
       }
+      console.log(rows);
       res.send(rows);
     });
   },
@@ -359,7 +322,7 @@ const projectCtrl = {
     fcmCtrl.invitePush();
   },
 
-  purgeUser: (req, res) => {
+  purgeUser: async (req, res) => {
     const userId = req.query.uid;
     const prjId = req.query.pid;
 
@@ -397,144 +360,17 @@ const projectCtrl = {
   deletePrj: async (req, res) => {
     const prjId = req.query.pid;
 
-    connection.beginTransaction((error) => {
+    const query = `
+      CALL prjRemove(?)
+    `;
+
+    connection.query(query, [prjId], (error, result)=>{
       if (error) {
-        console.error(error);
-        return res.sendStatus(500);
+        console.log(error);
+        res.sendStatus(500);
+      } else {
+        res.sendStatus(200);
       }
-      const taskCmtReply = `
-        DELETE FROM task_cmt_reply WHERE task_cmt_id IN (
-          SELECT task_cmt_id FROM task_cmt WHERE task_id IN (
-            SELECT task_id FROM task WHERE prj_id = ${prjId}))`;
-
-      connection.query(taskCmtReply, (error, result) => {
-        if (error) {
-          console.error(error);
-          connection.rollback(() => {
-            return res.sendStatus(500);
-          });
-        }
-        const taskCmt = `
-        DELETE FROM task_cmt WHERE task_id IN (
-          SELECT task_id FROM task WHERE prj_id = ${prjId})`;
-        connection.query(taskCmt, (error, result) => {
-          if (error) {
-            console.error(error);
-            connection.rollback(() => {
-              return res.sendStatus(500);
-            });
-          }
-          const feedCmtReply = `DELETE FROM feed_cmt_reply WHERE feed_cmt_id IN (
-            SELECT feed_cmt_id FROM feed_cmt WHERE feed_id IN (
-                SELECT feed_id FROM feed WHERE prj_id = ${prjId}))`;
-          connection.query(feedCmtReply, (error, result) => {
-            if (error) {
-              console.error(error);
-              connection.rollback(() => {
-                return res.sendStatus(500);
-              });
-            }
-            const feedCmt = `DELETE FROM feed_cmt WHERE feed_id IN (
-            SELECT feed_id FROM feed WHERE prj_id = ${prjId})`;
-
-            connection.query(feedCmt, (error, result) => {
-              if (error) {
-                console.error(error);
-                connection.rollback(() => {
-                  return res.sendStatus(500);
-                });
-              }
-              const userPrj = `DELETE FROM user_prj WHERE prj_id = ${prjId}`;
-
-              connection.query(userPrj, (error, result) => {
-                if (error) {
-                  console.error(error);
-                  connection.rollback(() => {
-                    return res.sendStatus(500);
-                  });
-                }
-                const userTask = `DELETE FROM user_task WHERE task_id IN (
-                    SELECT task_id FROM task WHERE prj_id = ${prjId})`;
-                connection.query(userTask, (error, result) => {
-                  if (error) {
-                    console.error(error);
-                    connection.rollback(() => {
-                      return res.sendStatus(500);
-                    });
-                  }
-                  const taskDtl = `
-                      DELETE FROM task_dtl WHERE task_id IN (
-                        SELECT task_id FROM task WHERE prj_id = ${prjId}
-                    )`;
-                  connection.query(taskDtl, (error, result) => {
-                    if (error) {
-                      console.error(error);
-                      connection.rollback(() => {
-                        return res.sendStatus(500);
-                      });
-                    }
-                    const mileStone = `DELETE FROM project_ms WHERE prj_id = ${prjId}`;
-                    connection.query(mileStone, (error, result) => {
-                      if (error) {
-                        console.error(error);
-                        connection.rollback(() => {
-                          return res.sendStatus(500);
-                        });
-                      }
-                      const taskDel = `DELETE FROM task WHERE prj_id = ${prjId}`;
-
-                      connection.query(taskDel, (error, result) => {
-                        if (error) {
-                          console.error(error);
-                          connection.rollback(() => {
-                            return res.sendStatus(500);
-                          });
-                        }
-                        const prjRule = `DELETE FROM project_rules WHERE prj_id = ${prjId}`;
-                        connection.query(prjRule, (error, result) => {
-                          if (error) {
-                            console.error(error);
-                            connection.rollback(() => {
-                              return res.sendStatus(500);
-                            });
-                          }
-                          const prjMember = `DELETE FROM project_mbr WHERE prj_id = ${prjId}`;
-                          connection.query(prjMember, (error, reseult) => {
-                            if (error) {
-                              console.error(error);
-                              connection.rollback(() => {
-                                return res.sendStatus(500);
-                              });
-                            }
-                            const prjDel = `DELETE FROM project_mst WHERE prj_id = ${prjId}`;
-                            connection.query(prjDel, (error, result) => {
-                              if (error) {
-                                console.error(error);
-                                connection.rollback(() => {
-                                  return res.sendStatus(500);
-                                });
-                              }
-                              connection.commit((error) => {
-                                if (error) {
-                                  console.error(error);
-                                  connection.rollback(() => {
-                                    return res.sendStatus(500);
-                                  });
-                                }
-                                res.sendStatus(200);
-                              });
-                            });
-                          });
-                        });
-                      });
-                    });
-                  });
-                });
-              });
-            });
-          });
-        });
-      });
     });
   }, // callback hell
 };

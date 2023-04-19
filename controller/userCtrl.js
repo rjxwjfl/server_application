@@ -26,80 +26,6 @@ const userCtrl = {
     });
   },
 
-  getUserMst: async (req, res) => {
-    const { username } = req.body;
-
-    console.log(req.body);
-    const query = `
-      SELECT *
-      FROM user_mst
-      WHERE username = ?
-    `;
-
-    connection.query(query, [username], (error, row) => {
-      if (error){
-        console.error(error);
-        res.sendStatus(500);
-      }
-      console.log(row);
-      res.send(row);
-    });
-  },
-
-  // -- query for entire user data (user own)
-  getOwnData: async (req, res) => {
-    const userId = req.query.uid;
-    const query = `
-      SELECT 
-        um.username,
-        um.fb_uid,
-        ud.create_at,
-        ud.update_at,
-        ud.latest_access,
-        ud.name,
-        ud.contact,
-        ud.introduce,
-        ud.image_url,
-        ud.sub_state,
-        ud.sub_deadline,
-      FROM user_mst um
-      LEFT JOIN user_dtl ud ON um.user_id = ud.user_id
-      LEFT JOIN user_prj up ON um.user_id = up.user_id
-      LEFT JOIN user_task ut ON um.user_id = ut.user_id
-      WHERE um.user_id = ?
-    `;
-
-    connection.query(query, [userId], (error, result) => {
-      if (error) {
-        console.log(error);
-        res.sendStatus(500);
-      }
-      res.status(200).send(result);
-    });
-  },
-
-  // -- query for user data (another user)
-  getUserData: async (req, res) => {
-    const userId = req.query.uid;
-    const query = `
-      SELECT *
-        FROM user_dtl
-        WHERE user_id = ?
-        `;
-        // COUNT(DISTINCT up.prj_id) AS project_count,
-        // COUNT(DISTINCT ut.task_id) AS task_count 
-        // 1. Let's just write a query one more time.
-        // 2. Let's get the whole dtl on Flutter or build a new model.
-    connection.query(query, [userId], (error, result) => {
-      if (error){
-        console.log(error);
-        res.sendStatus(500);
-      }
-      console.log(result);
-      res.status(200).send(result);
-    });
-  },
-
   modUserDtl: async (req, res) => {
     const userId = req.query.uid;
     const { name, contact, introduce, image_url } = req.body;
@@ -158,6 +84,101 @@ const userCtrl = {
     } else {
       res.status(400).send("Both old and new passwords are required");
     }
+  },
+
+  getUserMst: async (req, res) => {
+    const { username } = req.body;
+
+    console.log(req.body);
+    const query = `
+      SELECT *
+      FROM user_mst
+      WHERE username = ?
+    `;
+
+    connection.query(query, [username], (error, row) => {
+      if (error){
+        console.error(error);
+        res.sendStatus(500);
+      }
+      console.log(row);
+      res.send(row);
+    });
+  },
+
+  // -- query for entire user data (user own)
+  getOwnData: async (req, res) => {
+    const userId = req.query.uid;
+    const query = `
+      SELECT 
+        um.username,
+        um.fb_uid,
+        ud.create_at,
+        ud.update_at,
+        ud.latest_access,
+        ud.name,
+        ud.contact,
+        ud.introduce,
+        ud.image_url,
+        ud.sub_state,
+        ud.sub_deadline,
+      FROM user_mst um
+      LEFT JOIN user_dtl ud ON um.user_id = ud.user_id
+      LEFT JOIN user_prj up ON um.user_id = up.user_id
+      LEFT JOIN user_task ut ON um.user_id = ut.user_id
+      WHERE um.user_id = ?
+    `;
+
+    connection.query(query, [userId], (error, result) => {
+      if (error) {
+        console.log(error);
+        res.sendStatus(500);
+      }
+      res.status(200).send(result);
+    });
+  },
+
+
+  // -- query for user data (another user)
+  getUserData: async (req, res) => {
+    const userId = req.query.uid;
+    const query = `
+      SELECT *
+        FROM user_dtl
+        WHERE user_id = ?
+        `;
+        // COUNT(DISTINCT up.prj_id) AS project_count,
+        // COUNT(DISTINCT ut.task_id) AS task_count 
+        // 1. Let's just write a query one more time.
+        // 2. Let's get the whole dtl on Flutter or build a new model.
+    connection.query(query, [userId], (error, result) => {
+      if (error){
+        console.log(error);
+        res.sendStatus(500);
+      }
+      console.log(result);
+      res.status(200).send(result);
+    });
+  },
+
+  getMyRole: async (req, res) => {
+    const prjId = req.query.pid;
+    const userId = req.query.uid;
+    
+    const query = `
+      SELECT *
+      FROM project_mbr 
+      WHERE prj_id=? AND user_id=?
+    `;
+
+    const queryValue = [prjId, userId];
+
+    connection.query(query, queryValue, (error, rows) => {
+      if (error) {
+        res.sendStatus(500);
+      }
+      res.send(rows);
+    });
   },
 
   getMyProject: async (req, res) => {
