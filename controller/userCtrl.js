@@ -164,6 +164,7 @@ const userCtrl = {
   getMyRole: async (req, res) => {
     const prjId = req.query.pid;
     const userId = req.query.uid;
+
     
     const query = `
       SELECT *
@@ -177,6 +178,7 @@ const userCtrl = {
       if (error) {
         res.sendStatus(500);
       }
+      console.log(rows);
       res.send(rows);
     });
   },

@@ -6,21 +6,24 @@ const projectCtrl = {
   // post
   createPrj: async (req, res) => {
     const mstId = req.query.uid;
-    const { title, category, prj_desc, goal, start_on, expire_on, pvt, prj_pw } = req.body;
+    const { title, category, prj_desc, goal, start_on, expire_on, pvt } = req.body;
+    
+    console.log(req.body);
 
     const query = `
       CALL createPrj(?, ?, ?, ?, ?, ?, ?, ?)
     `;
     
-    const queryValue = [mstId, title, category, prj_desc, goal, start_on, expire_on, pvt, prj_pw];
+    const queryValue = [title, category, mstId, prj_desc, goal, start_on, expire_on, pvt];
 
     connection.query(query, queryValue, (error, result) => {
       if (error) {
         console.log(error);
         res.sendStatus(500);
       } else {
-        console.log(result);
-        res.status(200).send({ prj_id: result[0]["prj_id"] });
+        const prjId = parseInt(result[0][0].prj_id);
+        console.log(prjId);
+        res.status(200).send({ prj_id: prjId });
       }
     });
   },
