@@ -186,6 +186,8 @@ const userCtrl = {
   getMyProject: async (req, res) => {
     const userId = req.query.uid;
 
+    console.log(req.query);
+
     const query = `CALL getMyPrj ( ? )`;
 
     connection.query(query, [userId], (error, rows) => {
