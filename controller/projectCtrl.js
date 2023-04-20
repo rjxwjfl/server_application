@@ -67,7 +67,6 @@ const projectCtrl = {
       res.sendStatus(200);
     });
   },
-
   // put
   updatePrj: async (req, res) => {
     const prjId = req.query.pid;
