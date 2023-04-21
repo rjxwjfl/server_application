@@ -194,11 +194,12 @@ const projectCtrl = {
   },
 
   searchPrj: async (req, res) => {
-    const page = req.query.pg || 1;
-    const limit = 20;
+    const page = req.query.pg;
+    const limit = 10;
     const offset = (page - 1) * limit;
     const searchKeyword = req.query.sk;
     const sort = req.query.st;
+
 
     console.log(searchKeyword);
 
@@ -226,7 +227,7 @@ const projectCtrl = {
       LIMIT ? OFFSET ?
     `;
 
-    const orderOption =  () => {
+    const orderOption =  (sort) => {
       const map = {
         1: `p.start_on DESC`,
         2: `p.start_on ASC`,
@@ -235,12 +236,11 @@ const projectCtrl = {
         5: `member_count DESC`,
         6: `member_count ASC`,
         7: `p.title ASC`,
+        8: `p.title DESC`,
       };
       const order = map[sort] ?? `p.title DESC`;
       return order;
     }
-
-    console.log(query);
 
     let queryValue = searchKeyword? [ `%${searchKeyword}%`, orderOption(sort), limit, offset ]:[ orderOption(sort), limit, offset];
 
@@ -250,7 +250,6 @@ const projectCtrl = {
         console.log(error);
         res.sendStatus(500);
       }
-      console.log(rows);
       res.send(rows);
     });
   },
@@ -314,6 +313,7 @@ const projectCtrl = {
         console.error(error);
         res.sendStatus(500);
       }
+      console.log()
       console.log(rows);
       res.send(rows);
     });
