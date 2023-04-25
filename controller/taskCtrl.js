@@ -13,28 +13,9 @@ const taskCtrl = {
     } = req.body;
     const prjId = req.query.pid;
 
-    let query = `INSERT INTO task (prj_id, author_id, title, task_desc, start_on, expire_on`;
-
-    if (manager_id !== undefined) {
-      query += `, manager_id`;
-    }
-
-    if (task_att !== undefined) {
-      query += `, task_att`;
-    }
-
-    query += `) VALUES (${prjId}, ${author_id}, '${title}', '${task_desc}', '${start_on}', '${expire_on}'`;
-
-    if (manager_id !== undefined) {
-      query += `, ${manager_id}`;
-    }
-
-    if (task_att !== undefined) {
-      query += `, '${task_att}'`;
-    }
-
-    query += `)`;
-
+    const query = ``;
+    const queryValue = [];
+    
     connection.query(query, (error, result) => {
       if (error) {
         console.log(error);
@@ -203,16 +184,35 @@ const taskCtrl = {
     });
   },
 
+  // for task compact list
   getAllTasks: async (req, res) => {
     const prjId = req.query.pid;
 
     const query = `
-      SELECT *
-      FROM task
-      WHERE prj_id = ${prjId}
+      SELECT 
+      t.task_id, 
+        t.prj_id, 
+        t.title, 
+        t.task_desc, 
+        t.create_at, 
+        t.update_at, 
+        t.complete_at, 
+        t.start_on, 
+        t.expire_on, 
+        t.task_state,
+        t.author_id,
+        a.name as author_name, 
+        a.image_url as author_image_url,
+        t.manager_id,
+        m.name as manager_name, 
+        m.image_url as manager_image_url
+      FROM task t
+      LEFT JOIN user_dtl a ON t.author_id = a.user_id
+      LEFT JOIN user_dtl m ON t.manager_id = m.user_id;
+      WHERE prj_id = ?
   `;
 
-    connection.query(query, (error, rows) => {
+    connection.query(query, [prjId], (error, rows) => {
       if (error) {
         console.log(error);
         res.sendStatus(500);
@@ -301,7 +301,7 @@ const taskCtrl = {
                 });
               }
               connection.query(userTaskQuery, (error, result) => {
-                if (error){
+                if (error) {
                   return connection.rollback(() => {
                     console.log(error);
                     res.sendStatus(500);

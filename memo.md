@@ -4,6 +4,10 @@ CREATE TABLE user_mst (
   user_pw TEXT,
   device_token VARCHAR(255) NOT NULL,
   fb_uid CHAR(32) NOT NULL
+  <!--   
+  sub_state BOOLEAN NOT NULL DEFAULT FALSE,
+  sub_deadline TIMESTAMP 
+  -->
 );
 
 CREATE TABLE user_dtl (
@@ -65,6 +69,18 @@ CREATE TABLE project_mbr (
   role INT NOT NULL DEFAULT 3
 );
 
+CREATE TABLE project_group_mst(
+  grp_id INT AUTO_INCREMENT PRIMARY KEY,
+  prj_id INT NOT NULL,
+  grp_name VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE project_group_dtl(
+  grp_dtl_id INT AUTO_INCREMENT PRIMARY KEY,
+  grp_id INT NOT NULL,
+  user_id INT NOT NULL
+);
+
 CREATE TABLE project_ms (
   prj_ms_id INT AUTO_INCREMENT PRIMARY KEY,
   prj_id INT NOT NULL,
@@ -90,7 +106,7 @@ CREATE TABLE task (
   task_state INT NOT NULL DEFAULT 0,
 );
 
-CREATE TABLE task_dtl (
+CREATE TABLE task_user (
   task_dtl_id INT AUTO_INCREMENT PRIMARY KEY,
   task_id INT NOT NULL,
   pic_id INT NOT NULL,
@@ -101,7 +117,7 @@ CREATE TABLE task_dtl (
   -- user_eval would be null
 );
 
-CREATE TABLE task_cmt (
+<!-- CREATE TABLE task_cmt (
   task_cmt_id INT AUTO_INCREMENT PRIMARY KEY,
   task_id INT NOT NULL,
   author_id INT NOT NULL,
@@ -118,7 +134,7 @@ CREATE TABLE task_cmt_reply(
   task_reply_cnt VARCHAR(255) NOT NULL,
   create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+); -->
 
 CREATE TABLE feed (
   feed_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -165,6 +181,28 @@ CREATE TABLE task_dtl_att(
   task_id INT NOT NULL,
   att_user INT NOT NULL,
   task_att TEXT NOT NULL,
+  create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+CREATE TABLE task_repetive (
+  task_rpt_id INT AUTO_INCREMENT PRIMARY KEY,
+  prj_id INT NOT NULL,
+  author_id INT NOT NULL,
+  manager_id INT,
+  title VARCHAR(50) NOT NULL,
+  task_desc VARCHAR(255),
+  create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  rpt_freq INT NOT NULL,
+  rpt_period VARCHAR(20) NOT NULL
+);
+
+CREATE TABLE task_repetive_group (
+  task_rpt_grp_id INT AUTO_INCREMENT PRIMARY KEY,
+  grp_id INT NOT NULL,
+  state INT NOT NULL DEFAULT 0,
+  total_prog INT NOT NULL DEFAULT 0,
   create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );

@@ -8,5 +8,7 @@ app.use(express.json());
 
 app.use("/user", require("./routes/userRouter"));
 app.use("/project", require("./routes/projectRouter"));
+app.use("/task", require("./routes/taskRouter"));
+app.use("/feed", require("./routes/feedRouter"));
 
 module.exports = app;
