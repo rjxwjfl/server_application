@@ -19,9 +19,7 @@ CREATE TABLE user_dtl (
   name VARCHAR(100) NOT NULL,
   contact VARCHAR(50),
   introduce VARCHAR(255) DEFAULT NULL,
-  image_url VARCHAR(255) DEFAULT NULL,
-  sub_state BOOLEAN NOT NULL DEFAULT FALSE,
-  sub_deadline TIMESTAMP
+  image_url VARCHAR(255) DEFAULT NULL
 );
 
 CREATE TABLE user_prj (
@@ -91,50 +89,45 @@ CREATE TABLE project_ms (
   -- milestone complete date => task complete_at
 );
 
-CREATE TABLE task (
+CREATE TABLE task_mst (
   task_id INT AUTO_INCREMENT PRIMARY KEY,
   prj_id INT NOT NULL,
-  author_id INT NOT NULL,
-  manager_id INT,
-  title VARCHAR(50) NOT NULL,
-  task_desc VARCHAR(255),
+  pub_id INT NOT NULL,
+  task_mgr_id INT,
+  task_sub TEXT,
+  lbl_clr VARCHAR(6),
+  priority INT NOT NULL DEFAULT 0
+  -- low = 0, urgency = 3 
+);
+
+CREATE TABLE task_dtl (
+  task_dtl_id INT AUTO_INCREMENT PRIMARY KEY,
+  task_id INT NOT NULL,
+  task_att_id INT,
+  task_dtl_desc TEXT,
   create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  complete_at TIMESTAMP,
-  start_on TIMESTAMP NOT NULL,
-  expire_on TIMESTAMP NOT NULL,
-  task_state INT NOT NULL DEFAULT 0,
+  task_pe TINYINT NOT NULL DEFAULT 0,
+  task_period TEXT,
+  start_date TIMESTAMP,
+  end_date TIMESTAMP,
+  task_freq INT
 );
 
 CREATE TABLE task_user (
-  task_dtl_id INT AUTO_INCREMENT PRIMARY KEY,
+  task_user_id INT AUTO_INCREMENT PRIMARY KEY,
   task_id INT NOT NULL,
-  pic_id INT NOT NULL,
-  task_dtl_cnt VARCHAR(255),
-  user_prog INT NOT NULL DEFAULT 0,
-  user_eval INT DEFAULT 0
-  -- prog = progress // eval = evaluation
-  -- user_eval would be null
-);
-
-<!-- CREATE TABLE task_cmt (
-  task_cmt_id INT AUTO_INCREMENT PRIMARY KEY,
-  task_id INT NOT NULL,
-  author_id INT NOT NULL,
-  task_cmt_cnt VARCHAR(255) NOT NULL,
+  user_id INT NOT NULL,
+  task_user_att_id INT,
+  task_pnt TEXT,
+  task_cmt TEXT,
+  task_state INT NOT NULL DEFAULT 0,
   create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  start_date TIMESTAMP NOT NULL,
+  end_date TIMESTAMP NOT NULL,
+  cmpl_date TIMESTAMP
 );
-
-CREATE TABLE task_cmt_reply(
-  task_reply_id	INT AUTO_INCREMENT PRIMARY KEY,
-  task_id INT NOT NULL,
-  task_cmt_id INT NOT NULL,
-  author_id INT NOT NULL,
-  task_reply_cnt VARCHAR(255) NOT NULL,
-  create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-); -->
 
 CREATE TABLE feed (
   feed_id INT AUTO_INCREMENT PRIMARY KEY,
@@ -175,8 +168,8 @@ CREATE TABLE task_att(
   update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-CREATE TABLE task_dtl_att(
-  task_dtl_att_id INT AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE task_user_att(
+  task_user_att_id INT AUTO_INCREMENT PRIMARY KEY,
   prj_id INT NOT NULL,
   task_id INT NOT NULL,
   att_user INT NOT NULL,
@@ -185,24 +178,16 @@ CREATE TABLE task_dtl_att(
   update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-CREATE TABLE task_repetive (
-  task_rpt_id INT AUTO_INCREMENT PRIMARY KEY,
-  prj_id INT NOT NULL,
-  author_id INT NOT NULL,
-  manager_id INT,
-  title VARCHAR(50) NOT NULL,
-  task_desc VARCHAR(255),
-  create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  rpt_freq INT NOT NULL,
-  rpt_period VARCHAR(20) NOT NULL
-);
 
-CREATE TABLE task_repetive_group (
-  task_rpt_grp_id INT AUTO_INCREMENT PRIMARY KEY,
-  grp_id INT NOT NULL,
-  state INT NOT NULL DEFAULT 0,
-  total_prog INT NOT NULL DEFAULT 0,
-  create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-);
+SELECT
+	tm.*, td.*
+FROM task_mst tm
+LEFT JOIN task_dtl td ON tm.task_id = td.task_id
+WHERE tm.prj_id = 4;
+-- Load task data that matches the project.
+
+SELECT
+  *
+FROM task_mst tm
+RIGHT JOIN task_user tu ON tm.task_id = tu.task_id
+WHERE tu.user_id = 8;

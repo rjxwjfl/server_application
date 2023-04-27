@@ -3,26 +3,74 @@ const connection = require("../configs/dbConfig");
 const taskCtrl = {
   createTask: async (req, res) => {
     const {
-      author_id,
-      manager_id,
-      title,
-      task_desc,
-      start_on,
-      expire_on,
-      task_att,
+      pub_id,
+      task_mgr_id,
+      task_sub,
+      lbl_clr,
+      priority,
+      task_att_id,
+      task_dtl_desc,
+      task_pe,
+      task_period,
+      start_date,
+      end_date,
+      task_freq,
+      users,
     } = req.body;
     const prjId = req.query.pid;
 
-    const query = ``;
-    const queryValue = [];
+    const userMap = users.map((user) => {
+      const {
+        user_id,
+        task_user_att_id,
+        task_pnt,
+        task_cmt,
+        task_state,
+        start_date,
+        end_date,
+      } = user;
+
+      return {
+        user_id,
+        task_user_att_id,
+        task_pnt,
+        task_cmt,
+        task_state,
+        start_date,
+        end_date,
+      };
+    });
+
+    const taskUsers = JSON.stringify(userMap);
+
+    console.log(taskUsers);
+
+    const query = `CALL createTask(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+    const queryValue = [
+      pub_id,
+      task_mgr_id,
+      task_sub,
+      lbl_clr,
+      priority,
+      task_att_id,
+      task_dtl_desc,
+      task_pe,
+      task_period,
+      start_date,
+      end_date,
+      task_freq,
+      taskUsers,
+      prjId,
+    ];
     
-    connection.query(query, (error, result) => {
+    connection.query(query, queryValue, (error, result) => {
       if (error) {
         console.log(error);
         res.sendStatus(500);
       }
-      res.sendStatus(200);
-      // add fcm notify to project members
+      const taskId = parseInt(result[0][0].task_id);
+      console.log(taskId);
+      res.status(200).send({ task_id: taskId });
     });
   },
 
