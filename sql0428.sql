@@ -1,5 +1,3 @@
-CREATE DATABASE  IF NOT EXISTS `appdatabase` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
-USE `appdatabase`;
 -- MySQL dump 10.13  Distrib 8.0.32, for Win64 (x86_64)
 --
 -- Host: 127.0.0.1    Database: appdatabase
@@ -144,54 +142,6 @@ LOCK TABLES `payment_info` WRITE;
 UNLOCK TABLES;
 
 --
--- Table structure for table `project_group_dtl`
---
-
-DROP TABLE IF EXISTS `project_group_dtl`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `project_group_dtl` (
-  `grp_dtl_id` int NOT NULL AUTO_INCREMENT,
-  `grp_id` int NOT NULL,
-  `user_id` int NOT NULL,
-  PRIMARY KEY (`grp_dtl_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `project_group_dtl`
---
-
-LOCK TABLES `project_group_dtl` WRITE;
-/*!40000 ALTER TABLE `project_group_dtl` DISABLE KEYS */;
-/*!40000 ALTER TABLE `project_group_dtl` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `project_group_mst`
---
-
-DROP TABLE IF EXISTS `project_group_mst`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `project_group_mst` (
-  `grp_id` int NOT NULL AUTO_INCREMENT,
-  `prj_id` int NOT NULL,
-  `grp_name` varchar(50) NOT NULL,
-  PRIMARY KEY (`grp_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `project_group_mst`
---
-
-LOCK TABLES `project_group_mst` WRITE;
-/*!40000 ALTER TABLE `project_group_mst` DISABLE KEYS */;
-/*!40000 ALTER TABLE `project_group_mst` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
 -- Table structure for table `project_mbr`
 --
 
@@ -320,36 +270,37 @@ LOCK TABLES `project_rules` WRITE;
 UNLOCK TABLES;
 
 --
--- Table structure for table `task`
+-- Table structure for table `task_assigned`
 --
 
-DROP TABLE IF EXISTS `task`;
+DROP TABLE IF EXISTS `task_assigned`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `task` (
-  `task_id` int NOT NULL AUTO_INCREMENT,
-  `prj_id` int NOT NULL,
-  `author_id` int NOT NULL,
-  `manager_id` int DEFAULT NULL,
-  `title` varchar(50) NOT NULL,
-  `task_desc` varchar(255) DEFAULT NULL,
+CREATE TABLE `task_assigned` (
+  `task_asgd_id` int NOT NULL AUTO_INCREMENT,
+  `task_id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `task_asgd_att_id` int DEFAULT NULL,
+  `task_pnt` text,
+  `task_cmt` text,
+  `task_state` int NOT NULL DEFAULT '0',
   `create_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `update_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `complete_at` timestamp NULL DEFAULT NULL,
-  `start_on` timestamp NOT NULL,
-  `expire_on` timestamp NOT NULL,
-  `task_state` int NOT NULL DEFAULT '0',
-  PRIMARY KEY (`task_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `start_date` timestamp NOT NULL,
+  `end_date` timestamp NOT NULL,
+  `cmpl_date` timestamp NULL DEFAULT NULL,
+  PRIMARY KEY (`task_asgd_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `task`
+-- Dumping data for table `task_assigned`
 --
 
-LOCK TABLES `task` WRITE;
-/*!40000 ALTER TABLE `task` DISABLE KEYS */;
-/*!40000 ALTER TABLE `task` ENABLE KEYS */;
+LOCK TABLES `task_assigned` WRITE;
+/*!40000 ALTER TABLE `task_assigned` DISABLE KEYS */;
+INSERT INTO `task_assigned` VALUES (1,8,7,NULL,'A파트 검사 필',NULL,0,'2023-04-27 07:42:35','2023-04-27 07:42:35','2023-04-27 02:30:00','2023-04-27 08:30:00',NULL),(2,8,8,NULL,'B파트 재고파악',NULL,0,'2023-04-27 07:42:35','2023-04-27 07:42:35','2023-04-27 02:30:00','2023-04-27 06:30:00',NULL),(4,9,7,NULL,'A파트 검사 필',NULL,0,'2023-04-27 07:44:39','2023-04-27 07:44:39','2023-04-27 02:30:00','2023-04-27 08:30:00',NULL),(5,9,8,NULL,'B파트 재고파악',NULL,0,'2023-04-27 07:44:39','2023-04-27 07:44:39','2023-04-27 02:30:00','2023-04-27 06:30:00',NULL),(7,10,7,NULL,'A파트 검사 필',NULL,0,'2023-04-27 08:25:52','2023-04-27 08:25:52','2023-04-27 02:30:00','2023-04-27 08:30:00',NULL),(8,10,8,NULL,'B파트 재고파악',NULL,0,'2023-04-27 08:25:52','2023-04-27 08:25:52','2023-04-27 02:30:00','2023-04-27 06:30:00',NULL),(9,8,13,NULL,'C파트 검사',NULL,0,'2023-04-28 02:29:03','2023-04-28 02:29:03','2023-04-27 02:30:00','2023-04-27 06:30:00',NULL);
+/*!40000 ALTER TABLE `task_assigned` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
@@ -360,10 +311,10 @@ UNLOCK TABLES;
 /*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
 /*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
 DELIMITER ;;
-/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `task_BEFORE_DELETE` BEFORE DELETE ON `task` FOR EACH ROW BEGIN
-
-	DELETE FROM user_task ut WHERE ut.task_id = OLD.task_id;
-
+/*!50003 CREATE*/ /*!50017 DEFINER=`root`@`%`*/ /*!50003 TRIGGER `task_assigned_AFTER_UPDATE` AFTER UPDATE ON `task_assigned` FOR EACH ROW BEGIN
+    IF NEW.task_state = 1 AND NEW.cmpl_date IS NULL THEN
+        UPDATE `task_assigned` SET cmpl_date = CURRENT_TIMESTAMP WHERE task_asgd_id = NEW.task_asgd_id;
+    END IF;
 END */;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -372,86 +323,65 @@ DELIMITER ;
 /*!50003 SET collation_connection  = @saved_col_connection */ ;
 
 --
--- Table structure for table `task_att`
+-- Table structure for table `task_dtl`
 --
 
-DROP TABLE IF EXISTS `task_att`;
+DROP TABLE IF EXISTS `task_dtl`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `task_att` (
-  `task_att_id` int NOT NULL AUTO_INCREMENT,
-  `prj_id` int NOT NULL,
-  `task_id` int NOT NULL,
-  `att_user` int NOT NULL,
-  `task_att` text NOT NULL,
-  `create_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `update_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`task_att_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-/*!40101 SET character_set_client = @saved_cs_client */;
-
---
--- Dumping data for table `task_att`
---
-
-LOCK TABLES `task_att` WRITE;
-/*!40000 ALTER TABLE `task_att` DISABLE KEYS */;
-/*!40000 ALTER TABLE `task_att` ENABLE KEYS */;
-UNLOCK TABLES;
-
---
--- Table structure for table `task_user`
---
-
-DROP TABLE IF EXISTS `task_user`;
-/*!40101 SET @saved_cs_client     = @@character_set_client */;
-/*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `task_user` (
+CREATE TABLE `task_dtl` (
   `task_dtl_id` int NOT NULL AUTO_INCREMENT,
   `task_id` int NOT NULL,
-  `pic_id` int NOT NULL,
-  `task_dtl_cnt` varchar(255) DEFAULT NULL,
-  `user_prog` int NOT NULL DEFAULT '0',
-  `user_eval` int DEFAULT NULL,
+  `task_att_id` int DEFAULT NULL,
+  `task_dtl_desc` text,
+  `create_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `task_pe` tinyint NOT NULL DEFAULT '0',
+  `task_period` text,
+  `start_date` timestamp NULL DEFAULT NULL,
+  `end_date` timestamp NULL DEFAULT NULL,
+  `task_freq` int DEFAULT NULL,
   PRIMARY KEY (`task_dtl_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=10 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `task_user`
+-- Dumping data for table `task_dtl`
 --
 
-LOCK TABLES `task_user` WRITE;
-/*!40000 ALTER TABLE `task_user` DISABLE KEYS */;
-/*!40000 ALTER TABLE `task_user` ENABLE KEYS */;
+LOCK TABLES `task_dtl` WRITE;
+/*!40000 ALTER TABLE `task_dtl` DISABLE KEYS */;
+INSERT INTO `task_dtl` VALUES (7,8,NULL,'내용 확인하고 업무 시작할 것','2023-04-27 07:42:35','2023-04-27 07:42:35',0,NULL,NULL,NULL,NULL),(8,9,NULL,'내용 확인하고 업무 시작할 것','2023-04-27 07:44:39','2023-04-27 07:44:39',0,NULL,NULL,NULL,NULL),(9,10,NULL,'내용 확인하고 업무 시작할 것','2023-04-27 08:25:52','2023-04-27 08:25:52',0,NULL,NULL,NULL,NULL);
+/*!40000 ALTER TABLE `task_dtl` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
--- Table structure for table `task_user_att`
+-- Table structure for table `task_mst`
 --
 
-DROP TABLE IF EXISTS `task_user_att`;
+DROP TABLE IF EXISTS `task_mst`;
 /*!40101 SET @saved_cs_client     = @@character_set_client */;
 /*!50503 SET character_set_client = utf8mb4 */;
-CREATE TABLE `task_user_att` (
-  `task_dtl_att_id` int NOT NULL AUTO_INCREMENT,
+CREATE TABLE `task_mst` (
+  `task_id` int NOT NULL AUTO_INCREMENT,
   `prj_id` int NOT NULL,
-  `task_id` int NOT NULL,
-  `att_user` int NOT NULL,
-  `task_att` text NOT NULL,
-  `create_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `update_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`task_dtl_att_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+  `pub_id` int NOT NULL,
+  `task_mgr_id` int DEFAULT NULL,
+  `task_sub` text,
+  `lbl_clr` varchar(6) DEFAULT NULL,
+  `priority` int NOT NULL DEFAULT '0',
+  PRIMARY KEY (`task_id`)
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `task_user_att`
+-- Dumping data for table `task_mst`
 --
 
-LOCK TABLES `task_user_att` WRITE;
-/*!40000 ALTER TABLE `task_user_att` DISABLE KEYS */;
-/*!40000 ALTER TABLE `task_user_att` ENABLE KEYS */;
+LOCK TABLES `task_mst` WRITE;
+/*!40000 ALTER TABLE `task_mst` DISABLE KEYS */;
+INSERT INTO `task_mst` VALUES (8,4,8,NULL,'5월 매출 전망','FFFFFF',3),(9,4,8,NULL,'5월 매출 전망','FFFFFF',3),(10,4,8,NULL,'5월 매출 전망','FFFFFF',3);
+/*!40000 ALTER TABLE `task_mst` ENABLE KEYS */;
 UNLOCK TABLES;
 
 --
@@ -471,8 +401,6 @@ CREATE TABLE `user_dtl` (
   `contact` varchar(50) DEFAULT NULL,
   `introduce` varchar(255) DEFAULT NULL,
   `image_url` varchar(255) DEFAULT NULL,
-  `sub_state` tinyint(1) NOT NULL DEFAULT '0',
-  `sub_deadline` timestamp NULL DEFAULT NULL,
   PRIMARY KEY (`user_dtl_id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=14 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -483,7 +411,7 @@ CREATE TABLE `user_dtl` (
 
 LOCK TABLES `user_dtl` WRITE;
 /*!40000 ALTER TABLE `user_dtl` DISABLE KEYS */;
-INSERT INTO `user_dtl` VALUES (6,6,'2023-04-11 14:15:13','2023-04-11 14:15:13','2023-04-11 14:15:13','Test@test.com',NULL,NULL,NULL,0,NULL),(8,8,'2023-04-13 13:03:33','2023-04-13 13:03:33','2023-04-13 13:03:33','rjxwjfl@gmail.com',NULL,NULL,NULL,0,NULL),(13,13,'2023-04-14 04:48:40','2023-04-14 04:48:40','2023-04-14 04:48:40','dowithdevelop@gmail.com',NULL,NULL,NULL,0,NULL);
+INSERT INTO `user_dtl` VALUES (6,6,'2023-04-11 14:15:13','2023-04-11 14:15:13','2023-04-11 14:15:13','Test@test.com',NULL,NULL,NULL),(8,8,'2023-04-13 13:03:33','2023-04-13 13:03:33','2023-04-13 13:03:33','rjxwjfl@gmail.com',NULL,NULL,NULL),(13,13,'2023-04-14 04:48:40','2023-04-14 04:48:40','2023-04-14 04:48:40','dowithdevelop@gmail.com',NULL,NULL,NULL);
 /*!40000 ALTER TABLE `user_dtl` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -569,7 +497,7 @@ CREATE TABLE `user_task` (
   `user_id` int NOT NULL,
   `task_id` int NOT NULL,
   PRIMARY KEY (`user_task_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -578,6 +506,7 @@ CREATE TABLE `user_task` (
 
 LOCK TABLES `user_task` WRITE;
 /*!40000 ALTER TABLE `user_task` DISABLE KEYS */;
+INSERT INTO `user_task` VALUES (1,7,10),(2,8,10);
 /*!40000 ALTER TABLE `user_task` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -588,6 +517,63 @@ UNLOCK TABLES;
 --
 -- Dumping routines for database 'appdatabase'
 --
+/*!50003 DROP PROCEDURE IF EXISTS `assignTask` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`%` PROCEDURE `assignTask`(
+  IN p_prj_id INT,
+  IN p_task_id INT,
+  IN p_task_users JSON
+)
+BEGIN
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+  BEGIN
+    ROLLBACK;
+    SELECT 'Error occurred. Changes have been rolled back.' AS message;
+  END;
+  
+  START TRANSACTION;
+ 
+  SET @task_users_json = p_task_users;
+  
+  INSERT INTO task_user (task_id, user_id, task_user_att_id, task_pnt, task_cmt, task_state, start_date, end_date)
+  SELECT task_id, user_id, task_user_att_id, task_pnt, task_cmt, task_state, start_date, end_date
+  FROM JSON_TABLE(@task_users_json, '$[*]'
+    COLUMNS(
+      user_id INT PATH '$.user_id',
+      task_user_att_id INT PATH '$.task_user_att_id',
+      task_pnt TEXT PATH '$.task_pnt',
+      task_cmt TEXT PATH '$.task_cmt',
+      task_state INT PATH '$.task_state',
+      start_date TIMESTAMP PATH '$.start_date',
+      end_date TIMESTAMP PATH '$.end_date'
+    )
+  ) AS task_users;
+  
+    INSERT INTO user_task (user_id, task_id)
+  SELECT user_id, task_id
+  FROM JSON_TABLE(@task_users_json, '$[*]'
+	COLUMNS(
+      user_id INT PATH '$.user_id'
+    )
+  ) AS task_users;
+  
+  COMMIT;
+
+  SELECT task_id;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
 /*!50003 DROP PROCEDURE IF EXISTS `createPrj` */;
 /*!50003 SET @saved_cs_client      = @@character_set_client */ ;
 /*!50003 SET @saved_cs_results     = @@character_set_results */ ;
@@ -623,6 +609,83 @@ BEGIN
   COMMIT;
   
   SELECT prj_id;
+END ;;
+DELIMITER ;
+/*!50003 SET sql_mode              = @saved_sql_mode */ ;
+/*!50003 SET character_set_client  = @saved_cs_client */ ;
+/*!50003 SET character_set_results = @saved_cs_results */ ;
+/*!50003 SET collation_connection  = @saved_col_connection */ ;
+/*!50003 DROP PROCEDURE IF EXISTS `createTask` */;
+/*!50003 SET @saved_cs_client      = @@character_set_client */ ;
+/*!50003 SET @saved_cs_results     = @@character_set_results */ ;
+/*!50003 SET @saved_col_connection = @@collation_connection */ ;
+/*!50003 SET character_set_client  = utf8mb4 */ ;
+/*!50003 SET character_set_results = utf8mb4 */ ;
+/*!50003 SET collation_connection  = utf8mb4_0900_ai_ci */ ;
+/*!50003 SET @saved_sql_mode       = @@sql_mode */ ;
+/*!50003 SET sql_mode              = 'ONLY_FULL_GROUP_BY,STRICT_TRANS_TABLES,NO_ZERO_IN_DATE,NO_ZERO_DATE,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION' */ ;
+DELIMITER ;;
+CREATE DEFINER=`root`@`%` PROCEDURE `createTask`(
+  IN p_pub_id INT,
+  IN p_task_mgr_id INT,
+  IN p_task_sub TEXT,
+  IN p_lbl_clr VARCHAR(6),
+  IN p_priority INT,
+  IN p_task_att_id INT,
+  IN p_task_dtl_desc TEXT,
+  IN p_task_pe TINYINT,
+  IN p_task_period TEXT,
+  IN p_start_date TIMESTAMP,
+  IN p_end_date TIMESTAMP,
+  IN p_task_freq INT,
+  IN p_task_users JSON,
+  IN p_prj_id INT
+)
+BEGIN
+  DECLARE task_id INT;
+  DECLARE EXIT HANDLER FOR SQLEXCEPTION
+  BEGIN
+    ROLLBACK;
+    SELECT 'Error occurred. Changes have been rolled back.' AS message;
+  END;
+  
+  START TRANSACTION;
+  
+  INSERT INTO task_mst (prj_id, pub_id, task_mgr_id, task_sub, lbl_clr, priority)
+  VALUES (p_prj_id, p_pub_id, p_task_mgr_id, p_task_sub, p_lbl_clr, p_priority);
+
+  SET task_id = LAST_INSERT_ID();
+
+  INSERT INTO task_dtl (task_id, task_att_id, task_dtl_desc, task_pe, task_period, start_date, end_date, task_freq)
+  VALUES (task_id, p_task_att_id, p_task_dtl_desc, p_task_pe, p_task_period, p_start_date, p_end_date, p_task_freq);
+
+  SET @task_users_json = p_task_users;
+  
+  INSERT INTO task_assigned (task_id, user_id, task_asgd_att_id, task_pnt, task_cmt, task_state, start_date, end_date)
+  SELECT task_id, user_id, task_asgd_att_id, task_pnt, task_cmt, task_state, start_date, end_date
+  FROM JSON_TABLE(@task_users_json, '$[*]'
+    COLUMNS(
+      user_id INT PATH '$.user_id',
+      task_asgd_att_id INT PATH '$.task_user_att_id',
+      task_pnt TEXT PATH '$.task_pnt',
+      task_cmt TEXT PATH '$.task_cmt',
+      task_state INT PATH '$.task_state',
+      start_date TIMESTAMP PATH '$.start_date',
+      end_date TIMESTAMP PATH '$.end_date'
+    )
+  ) AS task_users;
+  
+  INSERT INTO user_task (user_id, task_id)
+  SELECT user_id, task_id
+  FROM JSON_TABLE(@task_users_json, '$[*]'
+	COLUMNS(
+      user_id INT PATH '$.user_id'
+    )
+  ) AS task_users;
+  
+  COMMIT;
+
+  SELECT task_id;
 END ;;
 DELIMITER ;
 /*!50003 SET sql_mode              = @saved_sql_mode */ ;
@@ -823,4 +886,4 @@ DELIMITER ;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2023-04-25 17:46:17
+-- Dump completed on 2023-04-28 17:52:27

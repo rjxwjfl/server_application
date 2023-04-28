@@ -114,11 +114,11 @@ CREATE TABLE task_dtl (
   task_freq INT
 );
 
-CREATE TABLE task_user (
-  task_user_id INT AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE task_assigned (
+  task_asgd_id INT AUTO_INCREMENT PRIMARY KEY,
   task_id INT NOT NULL,
   user_id INT NOT NULL,
-  task_user_att_id INT,
+  task_asgd_att_id INT,
   task_pnt TEXT,
   task_cmt TEXT,
   task_state INT NOT NULL DEFAULT 0,
@@ -162,18 +162,19 @@ CREATE TABLE task_att(
   task_att_id INT AUTO_INCREMENT PRIMARY KEY,
   prj_id INT NOT NULL,
   task_id INT NOT NULL,
-  att_user INT NOT NULL,
-  task_att TEXT NOT NULL,
+  user_id INT NOT NULL,
+  att_url TEXT NOT NULL,
   create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
-CREATE TABLE task_user_att(
-  task_user_att_id INT AUTO_INCREMENT PRIMARY KEY,
+CREATE TABLE task_assigned_att(
+  task_asgd_att_id INT AUTO_INCREMENT PRIMARY KEY,
   prj_id INT NOT NULL,
   task_id INT NOT NULL,
-  att_user INT NOT NULL,
-  task_att TEXT NOT NULL,
+  task_asgd_id INT NOT NULL,
+  user_id INT NOT NULL,
+  att_url TEXT NOT NULL,
   create_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
   update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
@@ -191,3 +192,87 @@ SELECT
 FROM task_mst tm
 RIGHT JOIN task_user tu ON tm.task_id = tu.task_id
 WHERE tu.user_id = 8;
+
+SELECT
+tm.task_id,
+tm.prj_id,
+tm.pub_id,
+pud.name AS pub_name,
+pud.image_url AS pub_image,
+tm.task_mgr_id,
+mud.name AS mgr_name,
+mud.image_url AS mgr_image,
+td.task_att_id,
+tm.task_sub,
+td.task_dtl_desc,
+tm.lbl_clr,
+tm.priority,
+td.create_at,
+td.update_at,
+td.task_pe,
+td.task_period,
+td.start_date,
+td.end_date,
+td.task_freq,
+COUNT(DISTINCT tu.user_id) AS assigned_users_count
+FROM task_mst AS tm
+LEFT JOIN user_dtl pud ON tm.pub_id = pud.user_id
+LEFT JOIN user_dtl mud ON tm.task_mgr_id = mud.user_id
+LEFT JOIN task_dtl td ON tm.task_id = td.task_id
+LEFT JOIN task_user tu ON tm.task_id = tu.task_id
+LEFT JOIN user_dtl ud ON tu.user_id = ud.user_id
+WHERE tm.prj_id = 4
+GROUP BY
+tm.task_id,
+tm.prj_id,
+tm.pub_id,
+pud.name,
+pud.image_url,
+tm.task_mgr_id,
+mud.name,
+mud.image_url,
+td.task_att_id,
+td.task_dtl_desc,
+tm.lbl_clr,
+tm.priority,
+td.create_at,
+td.update_at,
+td.task_pe,
+td.task_period,
+td.start_date,
+td.end_date,
+td.task_freq;
+-- task view compact a contain user count
+
+
+SELECT
+tm.task_id,
+tm.prj_id,
+tm.pub_id,
+pud.name AS pub_name,
+pud.image_url AS pub_image,
+tm.task_mgr_id,
+mud.name AS mgr_name,
+mud.image_url AS mgr_image,
+td.task_att_id,
+tm.task_sub,
+td.task_dtl_desc,
+tm.lbl_clr,
+tm.priority,
+td.create_at,
+td.update_at,
+td.task_pe,
+td.task_period,
+td.start_date,
+td.end_date,
+td.task_freq,
+ud.name,
+ud.image_url
+FROM task_mst AS tm
+LEFT JOIN user_dtl pud ON tm.pub_id = pud.user_id
+LEFT JOIN user_dtl mud ON tm.task_mgr_id = mud.user_id
+LEFT JOIN task_dtl td ON tm.task_id = td.task_id
+LEFT JOIN task_user tu ON tm.task_id = tu.task_id
+LEFT JOIN user_dtl ud ON tu.user_id = ud.user_id
+WHERE tm.prj_id = 4 AND tm.task_id=8;
+-- task view details for user circle avatar list

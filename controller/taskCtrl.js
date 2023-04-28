@@ -75,15 +75,38 @@ const taskCtrl = {
   },
 
   assignTask: async (req, res) => {
-    const { pic_id, task_dtl_cnt } = req.body;
+    const { users } = req.body;
+    const prjId = req.query.pid;
     const taskId = req.query.tid;
 
-    const query = `
-      INSERT INTO task_dtl (task_id, pic_id, task_dtl_cnt)
-      VALUES (${taskId}, ${pic_id}, '${task_dtl_cnt}')
-    `;
+    const userMap = users.map((user) => {
+      const {
+        user_id,
+        task_user_att_id,
+        task_pnt,
+        task_cmt,
+        task_state,
+        start_date,
+        end_date,
+      } = user;
 
-    connection.query(query, (error, result) => {
+      return {
+        user_id,
+        task_user_att_id,
+        task_pnt,
+        task_cmt,
+        task_state,
+        start_date,
+        end_date,
+      };
+    });
+
+    const taskUsers = JSON.stringify(userMap);
+
+    const query = `CALL assignTask(?, ?, ?)`;
+    const queryValue = [ prjId, taskId, taskUsers ];
+
+    connection.query(query,  queryValue,(error, result) => {
       if (error) {
         console.log(error);
         res.sendStatus(500);
