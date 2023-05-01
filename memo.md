@@ -179,19 +179,56 @@ CREATE TABLE task_assigned_att(
   update_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
+SELECT
+  tm.prj_id,
+  tm.task_id,
+  tm.pub_id,
+  pud.name AS pub_name,
+  tm.task_mgr_id,
+  mud.name AS mgr_name,
+  tm.task_sub,
+  tm.lbl_clr,
+  tm.priority,
+  ta.task_pnt,
+  ta.task_cmt,
+  ta.task_state,
+  ta.create_at,
+  ta.update_at,
+  ta.start_date,
+  ta.end_date,
+  ta.cmpl_date
+FROM task_mst tm
+LEFT JOIN user_dtl pud ON tm.pub_id = pud.user_id
+LEFT JOIN user_dtl mud ON tm.task_mgr_id = mud.user_id
+LEFT JOIN task_assigned ta ON tm.task_id = ta.task_id
+WHERE ta.user_id = 8;
+-- Get all tasks assigned to a user 
+
 
 SELECT
-	tm.*, td.*
+  tm.prj_id,
+  tm.task_id,
+  tm.pub_id,
+  pud.name AS pub_name,
+  tm.task_mgr_id,
+  mud.name AS mgr_name,
+  tm.task_sub,
+  tm.lbl_clr,
+  tm.priority,
+  ta.task_pnt,
+  ta.task_cmt,
+  ta.task_state,
+  ta.create_at,
+  ta.update_at,
+  ta.start_date,
+  ta.end_date,
+  ta.cmpl_date
 FROM task_mst tm
-LEFT JOIN task_dtl td ON tm.task_id = td.task_id
-WHERE tm.prj_id = 4;
--- Load task data that matches the project.
-
-SELECT
-  *
-FROM task_mst tm
-RIGHT JOIN task_user tu ON tm.task_id = tu.task_id
-WHERE tu.user_id = 8;
+LEFT JOIN user_dtl pud ON tm.pub_id = pud.user_id
+LEFT JOIN user_dtl mud ON tm.task_mgr_id = mud.user_id
+LEFT JOIN task_assigned ta ON tm.task_id = ta.task_id
+WHERE ta.user_id = 8 AND tm.prj_id = 4;
+-- Get all tasks assigned to a user in that project
 
 SELECT
 tm.task_id,
@@ -214,13 +251,13 @@ td.task_period,
 td.start_date,
 td.end_date,
 td.task_freq,
-COUNT(DISTINCT tu.user_id) AS assigned_users_count
+COUNT(DISTINCT ta.user_id) AS assigned_users_count
 FROM task_mst AS tm
 LEFT JOIN user_dtl pud ON tm.pub_id = pud.user_id
 LEFT JOIN user_dtl mud ON tm.task_mgr_id = mud.user_id
 LEFT JOIN task_dtl td ON tm.task_id = td.task_id
-LEFT JOIN task_user tu ON tm.task_id = tu.task_id
-LEFT JOIN user_dtl ud ON tu.user_id = ud.user_id
+LEFT JOIN task_assigned ta ON tm.task_id = ta.task_id
+LEFT JOIN user_dtl ud ON ta.user_id = ud.user_id
 WHERE tm.prj_id = 4
 GROUP BY
 tm.task_id,
@@ -242,7 +279,7 @@ td.task_period,
 td.start_date,
 td.end_date,
 td.task_freq;
--- task view compact a contain user count
+-- task view compact to contain user count in project
 
 
 SELECT
@@ -272,7 +309,60 @@ FROM task_mst AS tm
 LEFT JOIN user_dtl pud ON tm.pub_id = pud.user_id
 LEFT JOIN user_dtl mud ON tm.task_mgr_id = mud.user_id
 LEFT JOIN task_dtl td ON tm.task_id = td.task_id
-LEFT JOIN task_user tu ON tm.task_id = tu.task_id
-LEFT JOIN user_dtl ud ON tu.user_id = ud.user_id
+LEFT JOIN task_assigned ta ON tm.task_id = ta.task_id
+LEFT JOIN user_dtl ud ON ta.user_id = ud.user_id
 WHERE tm.prj_id = 4 AND tm.task_id=8;
--- task view details for user circle avatar list
+-- task view details to display user circle avatar list
+
+
+SELECT
+tm.task_id,
+tm.prj_id,
+tm.pub_id,
+pud.name AS pub_name,
+pud.image_url AS pub_image,
+tm.task_mgr_id,
+mud.name AS mgr_name,
+mud.image_url AS mgr_image,
+td.task_att_id,
+tm.task_sub,
+td.task_dtl_desc,
+tm.lbl_clr,
+tm.priority,
+td.create_at,
+td.update_at,
+td.task_pe,
+td.task_period,
+td.start_date,
+td.end_date,
+td.task_freq,
+COUNT(DISTINCT ta.user_id) AS assigned_users_count
+FROM user_task ut
+LEFT JOIN task_mst tm ON ut.task_id = tm.task_id
+LEFT JOIN user_dtl pud ON tm.pub_id = pud.user_id
+LEFT JOIN user_dtl mud ON tm.task_mgr_id = mud.user_id
+LEFT JOIN task_dtl td ON tm.task_id = td.task_id
+LEFT JOIN task_assigned ta ON tm.task_id = ta.task_id
+LEFT JOIN user_dtl ud ON ta.user_id = ud.user_id
+WHERE tm.prj_id = 4 AND ut.user_id = 8
+GROUP BY
+tm.task_id,
+tm.prj_id,
+tm.pub_id,
+pud.name,
+pud.image_url,
+tm.task_mgr_id,
+mud.name,
+mud.image_url,
+td.task_att_id,
+td.task_dtl_desc,
+tm.lbl_clr,
+tm.priority,
+td.create_at,
+td.update_at,
+td.task_pe,
+td.task_period,
+td.start_date,
+td.end_date,
+td.task_freq;
+

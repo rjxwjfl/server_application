@@ -62,7 +62,7 @@ const taskCtrl = {
       taskUsers,
       prjId,
     ];
-    
+
     connection.query(query, queryValue, (error, result) => {
       if (error) {
         console.log(error);
@@ -104,9 +104,9 @@ const taskCtrl = {
     const taskUsers = JSON.stringify(userMap);
 
     const query = `CALL assignTask(?, ?, ?)`;
-    const queryValue = [ prjId, taskId, taskUsers ];
+    const queryValue = [prjId, taskId, taskUsers];
 
-    connection.query(query,  queryValue,(error, result) => {
+    connection.query(query, queryValue, (error, result) => {
       if (error) {
         console.log(error);
         res.sendStatus(500);
@@ -116,42 +116,18 @@ const taskCtrl = {
     });
   },
 
-  createTaskCmt: async (req, res) => {
-    const { author_id, task_cmt_cnt } = req.body;
-    const taskId = req.query.tid;
+  updateTaskState: async (req, res) => {
+    const taskAsgdId = req.query.taid;
 
-    const query = `
-      INSERT INTO task_cmt (task_id, author_id, task_cmt_cnt)
-      VALUES (${taskId}, ${author_id}, '${task_cmt_cnt}')
-    `;
+    const query = ``;
+    const queryValue = [];
 
     connection.query(query, (error, result) => {
       if (error) {
-        console.log(error);
+        console.error(error);
         res.sendStatus(500);
       }
       res.sendStatus(200);
-      // add fcm notify to task members
-    });
-  },
-
-  createTaskCmtRly: async (req, res) => {
-    const { author_id, task_reply_cnt } = req.body;
-    const taskId = req.query.tid;
-    const cmtId = req.query.cid;
-
-    const query = `
-      INSERT INTO task_cmt_reply (task_id, task_cmt_id, author_id, task_reply_cnt)
-      VALUES (${taskId}, ${cmtId}, ${author_id}, ${task_reply_cnt})
-    `;
-
-    connection.query(query, (error, result) => {
-      if (error) {
-        console.log(error);
-        res.sendStatus(500);
-      }
-      res.sendStatus(200);
-      // add fcm notify to author
     });
   },
 
@@ -163,27 +139,6 @@ const taskCtrl = {
       UPDATE task
       SET manager_id = ${manager_id}
       WHERE task_id = ${taskId}
-    `;
-
-    connection.query(query, (error, result) => {
-      if (error) {
-        console.log(error);
-        res.sendStatus(500);
-      }
-      res.sendStatus(200);
-      // add fcm notify to task members
-    });
-  },
-
-  evaluateUser: async (req, res) => {
-    const { user_eval } = req.body;
-    const taskId = req.query.tid;
-    const picId = req.query.pic;
-
-    const query = `
-      UPDATE task_dtl
-      SET user_eval = ${user_eval}
-      WHERE task_id = ${taskId} AND pic_id = ${picId}
     `;
 
     connection.query(query, (error, result) => {
@@ -236,52 +191,61 @@ const taskCtrl = {
     });
   },
 
-  getTask: async (req, res) => {
-    const tskId = req.query.tid;
+  // Get detail data to selected task
+  getTaskList: async (req, res) => {
     const prjId = req.query.pid;
 
     const query = `
-      SELECT *
-      FROM task
-      WHERE task_id = ${tskId} AND prj_id = ${prjId}
+    SELECT
+      tm.task_id,
+      tm.prj_id,
+      tm.pub_id,
+      pud.name AS pub_name,
+      pud.image_url AS pub_image,
+      tm.task_mgr_id,
+      mud.name AS mgr_name,
+      mud.image_url AS mgr_image,
+      td.task_att_id,
+      tm.task_sub,
+      td.task_dtl_desc,
+      tm.lbl_clr,
+      tm.priority,
+      td.create_at,
+      td.update_at,
+      td.task_pe,
+      td.task_period,
+      td.start_date,
+      td.end_date,
+      td.task_freq,
+      COUNT(DISTINCT ta.user_id) AS users_count
+    FROM task_mst AS tm
+    LEFT JOIN user_dtl pud ON tm.pub_id = pud.user_id
+    LEFT JOIN user_dtl mud ON tm.task_mgr_id = mud.user_id
+    LEFT JOIN task_dtl td ON tm.task_id = td.task_id
+    LEFT JOIN task_assigned ta ON tm.task_id = ta.task_id
+    LEFT JOIN user_dtl ud ON ta.user_id = ud.user_id
+    WHERE tm.prj_id = ? 
+    GROUP BY
+      tm.task_id,
+      tm.prj_id,
+      tm.pub_id,
+      pud.name,
+      pud.image_url,
+      tm.task_mgr_id,
+      mud.name,
+      mud.image_url,
+      td.task_att_id,
+      td.task_dtl_desc,
+      tm.lbl_clr,
+      tm.priority,
+      td.create_at,
+      td.update_at,
+      td.task_pe,
+      td.task_period,
+      td.start_date,
+      td.end_date,
+      td.task_freq
     `;
-
-    connection.query(query, (error, row) => {
-      if (error) {
-        console.log(error);
-        res.sendStatus(500);
-      }
-      res.send(row);
-    });
-  },
-
-  // for task compact list
-  getAllTasks: async (req, res) => {
-    const prjId = req.query.pid;
-
-    const query = `
-      SELECT 
-      t.task_id, 
-        t.prj_id, 
-        t.title, 
-        t.task_desc, 
-        t.create_at, 
-        t.update_at, 
-        t.complete_at, 
-        t.start_on, 
-        t.expire_on, 
-        t.task_state,
-        t.author_id,
-        a.name as author_name, 
-        a.image_url as author_image_url,
-        t.manager_id,
-        m.name as manager_name, 
-        m.image_url as manager_image_url
-      FROM task t
-      LEFT JOIN user_dtl a ON t.author_id = a.user_id
-      LEFT JOIN user_dtl m ON t.manager_id = m.user_id;
-      WHERE prj_id = ?
-  `;
 
     connection.query(query, [prjId], (error, rows) => {
       if (error) {
@@ -292,106 +256,127 @@ const taskCtrl = {
     });
   },
 
-  getTaskCmt: async (req, res) => {
-    const tskId = req.query.tid;
+  getUserTaskList: async (req, res) => {
+    const userId = req.query.uid;
+    const prjId = req.query.pid;
 
-    const query = `
-      SELECT *
-      FROM task_cmt
-      WHERE task_id = ${tskId}
+    let query = `
+      SELECT
+        tm.task_id,
+        tm.prj_id,
+        tm.pub_id,
+        pud.name AS pub_name,
+        pud.image_url AS pub_image,
+        tm.task_mgr_id,
+        mud.name AS mgr_name,
+        mud.image_url AS mgr_image,
+        td.task_att_id,
+        tm.task_sub,
+        td.task_dtl_desc,
+        tm.lbl_clr,
+        tm.priority,
+        td.create_at,
+        td.update_at,
+        td.task_pe,
+        td.task_period,
+        td.start_date,
+        td.end_date,
+        td.task_freq,
+        COUNT(DISTINCT ta.user_id) AS users_count
+      FROM user_task ut
+      LEFT JOIN task_mst tm ON ut.task_id = tm.task_id
+      LEFT JOIN user_dtl pud ON tm.pub_id = pud.user_id
+      LEFT JOIN user_dtl mud ON tm.task_mgr_id = mud.user_id
+      LEFT JOIN task_dtl td ON tm.task_id = td.task_id
+      LEFT JOIN task_assigned ta ON tm.task_id = ta.task_id
+      LEFT JOIN user_dtl ud ON ta.user_id = ud.user_id
+      WHERE ut.user_id = ?
+      `;
+    const queryParams = [userId];
+
+    if (prjId) {
+      queryParams.push(prjId);
+      query += `AND tm.prj_id = ?`
+    }
+    query += `
+      GROUP BY
+        tm.task_id,
+        tm.prj_id,
+        tm.pub_id,
+        pud.name,
+        pud.image_url,
+        tm.task_mgr_id,
+        mud.name,
+        mud.image_url,
+        td.task_att_id,
+        td.task_dtl_desc,
+        tm.lbl_clr,
+        tm.priority,
+        td.create_at,
+        td.update_at,
+        td.task_pe,
+        td.task_period,
+        td.start_date,
+        td.end_date,
+        td.task_freq
     `;
-
-    connection.query(query, (error, rows) => {
+    connection.query(query, queryParams, (error, rows) => {
       if (error) {
         console.log(error);
         res.sendStatus(500);
       }
       res.send(rows);
+      console.log(rows);
     });
   },
 
-  getTaskCmtReply: async (req, res) => {
-    const tskId = req.query.tid;
+  // Get all tasks assigned to a user
+  // If project id is provided, return only tasks for that project
+  getAssignedTask: async (req, res) => {
+    const userId = req.query.uid;
+    const prjId = req.query.pid;
 
-    const query = `
-      SELECT *
-      FROM task_cmt_reply
-      WHERE task_id = ${tskId}
-    `;
+    let query = `
+      SELECT
+        tm.prj_id,
+        tm.task_id,
+        tm.pub_id,
+        ta.task_asgd_id,
+        pud.name AS pub_name,
+        tm.task_mgr_id,
+        mud.name AS mgr_name,
+        tm.task_sub,
+        tm.lbl_clr,
+        tm.priority,
+        ta.task_pnt,
+        ta.task_cmt,
+        ta.task_state,
+        ta.create_at,
+        ta.update_at,
+        ta.start_date,
+        ta.end_date,
+        ta.cmpl_date
+      FROM task_mst tm
+      LEFT JOIN user_dtl pud ON tm.pub_id = pud.user_id
+      LEFT JOIN user_dtl mud ON tm.task_mgr_id = mud.user_id
+      LEFT JOIN task_assigned ta ON tm.task_id = ta.task_id
+      WHERE ta.user_id = ?
+      `;
 
-    connection.query(query, (error, rows) => {
+    const queryParams = [userId];
+
+    if (prjId) {
+      query += " AND tm.prj_id = ?";
+      queryParams.push(prjId);
+    }
+
+    connection.query(query, queryParams, (error, rows) => {
       if (error) {
         console.log(error);
         res.sendStatus(500);
       }
       res.send(rows);
-    });
-  },
-
-  deleteTask: async (req, res) => {
-    const taskId = req.query.tid;
-
-    connection.beginTransaction((err) => {
-      if (err) {
-        console.log(err);
-        res.sendStatus(500);
-      }
-
-      const taskQuery = `DELETE FROM task WHERE task_id=${taskId}`;
-      const taskDtlQuery = `DELETE FROM task_dtl WHERE task_id=${taskId}`;
-      const taskCmtQuery = `DELETE FROM task_cmt WHERE task_id=${taskId}`;
-      const taskCmtReplyQuery = `DELETE FROM task_cmt_reply WHERE task_id=${taskId}`;
-      const userTaskQuery = `DELETE FROM user_task WHERE task_id=${taskId}`;
-
-      connection.query(taskQuery, (error, result) => {
-        if (error) {
-          return connection.rollback(() => {
-            console.log(error);
-            res.sendStatus(500);
-          });
-        }
-        connection.query(taskDtlQuery, (error, result) => {
-          if (error) {
-            return connection.rollback(() => {
-              console.log(error);
-              res.sendStatus(500);
-            });
-          }
-          connection.query(taskCmtQuery, (error, result) => {
-            if (error) {
-              return connection.rollback(() => {
-                console.log(error);
-                res.sendStatus(500);
-              });
-            }
-            connection.query(taskCmtReplyQuery, (error, result) => {
-              if (error) {
-                return connection.rollback(() => {
-                  console.log(error);
-                  res.sendStatus(500);
-                });
-              }
-              connection.query(userTaskQuery, (error, result) => {
-                if (error) {
-                  return connection.rollback(() => {
-                    console.log(error);
-                    res.sendStatus(500);
-                  });
-                }
-                connection.commit((err) => {
-                  if (err) {
-                    return connection.rollback(() => {
-                      console.log(err);
-                      res.sendStatus(500);
-                    });
-                  }
-                  res.sendStatus(200);
-                });
-              });
-            });
-          });
-        });
-      });
+      console.log(rows);
     });
   },
 };

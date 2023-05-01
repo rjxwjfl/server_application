@@ -2,10 +2,12 @@ const taskCtrl = require("../controller/taskCtrl");
 const router = require("express").Router();
 
 router.route('/')
-    .get(taskCtrl.getAllTasks)
-    .post(taskCtrl.createTask);
+    .get(taskCtrl.getAssignedTask);
     
-router.route('/info')
-    .get(taskCtrl.getTask);
+router.route('/taskList')
+    .get(taskCtrl.getTaskList);
+
+router.route('/userTaskList')
+    .get(taskCtrl.getUserTaskList);
 
 module.exports = router;
